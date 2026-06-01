@@ -5,10 +5,9 @@ import (
 	"errors"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/db"
-	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
 )
 
-func CreateUserAndVillage(req dtos.RegisterRequestDTO) (int, error) {
+func CreateUserAndVillage(username, password_hash string) (int, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -18,7 +17,7 @@ func CreateUserAndVillage(req dtos.RegisterRequestDTO) (int, error) {
 	defer tx.Rollback(ctx)
 
 	var userID int
-	err = tx.QueryRow(ctx, "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id", req.Username, req.PasswordHash).Scan(&userID)
+	err = tx.QueryRow(ctx, "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id", username, password_hash).Scan(&userID)
 
 	if err != nil {
 		return 0, errors.New("username already exists")
