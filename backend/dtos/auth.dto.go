@@ -1,8 +1,8 @@
 package dtos
 
 type RegisterRequestDTO struct {
-	Username     string
-	PasswordHash string
+	Username string
+	Password string
 }
 
 type RegisterResponseDTO struct {
