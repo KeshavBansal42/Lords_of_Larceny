@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -14,7 +13,7 @@ func SeedDatabase(conn *pgx.Conn) {
 
 	err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM troop_configs").Scan(&count)
 	if err != nil {
-		log.Fatal("Failed to count troops: ", err)
+		log.Println("Failed to count troops: ", err)
 	}
 
 	if count == 0 {
@@ -34,11 +33,10 @@ func SeedDatabase(conn *pgx.Conn) {
 
 	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM building_configs").Scan(&count)
 	if err != nil {
-		log.Fatal("Failed to count buildings: ", err)
+		log.Println("Failed to count buildings: ", err)
 	}
 
 	if count == 0 {
-		fmt.Println("Seeding buildings...")
 		buildingQuery := `
 			INSERT INTO building_configs (name, level, hit_points, damage, build_cost) VALUES 
 			-- Town Hall
@@ -67,9 +65,7 @@ func SeedDatabase(conn *pgx.Conn) {
 		`
 		_, err = conn.Exec(ctx, buildingQuery)
 		if err != nil {
-			log.Fatal("Failed to seed buildings: ", err)
+			log.Println("Failed to seed buildings: ", err)
 		}
 	}
-
-	fmt.Println("Database seeding verified.")
 }
