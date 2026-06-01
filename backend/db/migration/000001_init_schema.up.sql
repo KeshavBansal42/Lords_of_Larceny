@@ -28,7 +28,6 @@ CREATE TABLE troop_configs (
     level INT NOT NULL,
     hit_points INT NOT NULL,
     damage INT NOT NULL,
-    training_cost INT NOT NULL
 );
 
 CREATE TABLE village_buildings (
