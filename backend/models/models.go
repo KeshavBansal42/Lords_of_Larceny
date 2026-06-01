@@ -27,12 +27,11 @@ type BuildingConfig struct {
 }
 
 type TroopConfig struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Level        int    `json:"level"`
-	HitPoints    int    `json:"hit_points"`
-	Damage       int    `json:"damage"`
-	TrainingCost int    `json:"training_cost"`
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Level     int    `json:"level"`
+	HitPoints int    `json:"hit_points"`
+	Damage    int    `json:"damage"`
 }
 
 type VillageBuilding struct {
