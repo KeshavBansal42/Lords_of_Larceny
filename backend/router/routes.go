@@ -6,9 +6,9 @@ import (
 )
 
 func InitRoutes() *mux.Router {
-	Router := mux.NewRouter()
+	router := mux.NewRouter()
 
-	Router.HandleFunc("/register", controllers.Register).Methods("POST")
+	router.HandleFunc("/register", controllers.Register).Methods("POST")
 
-	return Router
+	return router
 }
