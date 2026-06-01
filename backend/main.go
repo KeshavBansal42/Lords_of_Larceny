@@ -6,16 +6,14 @@ import (
 	"os"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/db"
-	"github.com/KeshavBansal42/Lords_of_Larceny/backend/routes"
-	"github.com/gorilla/mux"
+	"github.com/KeshavBansal42/Lords_of_Larceny/backend/router"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	db.InitDB()
 
-	r := mux.NewRouter()
-	routes.InitRoutes(r)
+	r := router.InitRoutes()
 
 	err := godotenv.Load()
 	if err != nil {
