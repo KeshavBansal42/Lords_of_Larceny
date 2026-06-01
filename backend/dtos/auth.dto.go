@@ -1,10 +1,10 @@
 package dtos
 
 type RegisterRequestDTO struct {
-	Username string
-	Password string
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type RegisterResponseDTO struct {
-	ID int
+	ID int `json:"id"`
 }
