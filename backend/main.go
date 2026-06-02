@@ -11,16 +11,15 @@ import (
 )
 
 func main() {
-	db.InitDB()
-
-	r := router.InitRoutes()
-
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading .env file")
 	}
 
-	addrString := os.Getenv("SERVER_URI")
+	db.InitDB()
 
+	r := router.InitRoutes()
+
+	addrString := os.Getenv("SERVER_URI")
 	http.ListenAndServe(addrString, r)
 }
