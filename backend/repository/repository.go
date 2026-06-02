@@ -36,3 +36,15 @@ func CreateUserAndVillage(username, password_hash string) (int, error) {
 
 	return userID, nil
 }
+
+func GetUserByUsername(username string) (int, string, error) {
+	var userID int
+	var passwordHash string
+	err := db.Conn.QueryRow(context.Background(), "SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
+
+	if err != nil {
+		return 0, "", errors.New("Error getting the userID and PasswordHash")
+	}
+
+	return userID, passwordHash, nil
+}
