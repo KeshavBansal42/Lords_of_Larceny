@@ -19,7 +19,9 @@ CREATE TABLE building_configs (
     level INT NOT NULL,
     hit_points INT NOT NULL,
     damage INT NOT NULL DEFAULT 0,
-    build_cost INT NOT NULL
+    build_cost INT NOT NULL,
+    production_per_min INT NOT NULL DEFAULT 0,
+    capacity INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE troop_configs (
