@@ -23,3 +23,14 @@ type VillageResponseDTO struct {
 	Gold          int `json:"gold"`
 	Elixir        int `json:"elixir"`
 }
+
+type BuildRequestDTO struct {
+	BuildingID int `json:"building_id"`
+	X          int `json:"x"`
+	Y          int `json:"y"`
+}
+
+type BuildResponseDTO struct {
+	Message       string `json:"message"`
+	RemainingGold int    `json:"remaining_gold"`
+}
