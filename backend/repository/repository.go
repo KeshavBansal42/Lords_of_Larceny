@@ -48,3 +48,16 @@ func GetUserByUsername(username string) (int, string, error) {
 
 	return userID, passwordHash, nil
 }
+
+func GetVillageByUserID(userID int) (int, int, int, error) {
+	var townHallLevel int
+	var gold int
+	var elixir int
+	err := db.Conn.QueryRow(context.Background(), "SELECT town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&townHallLevel, &gold, &elixir)
+
+	if err != nil {
+		return 0, 0, 0, errors.New("Error fetching the village")
+	}
+
+	return townHallLevel, gold, elixir, nil
+}
