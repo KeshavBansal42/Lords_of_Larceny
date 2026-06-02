@@ -17,3 +17,9 @@ type LoginRequestDTO struct {
 type LoginResponseDTO struct {
 	Token string `json:"token"`
 }
+
+type VillageResponseDTO struct {
+	TownHallLevel int `json:"town_hall_level"`
+	Gold          int `json:"gold"`
+	Elixir        int `json:"elixir"`
+}
