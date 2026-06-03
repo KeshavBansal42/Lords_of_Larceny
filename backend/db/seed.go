@@ -38,42 +38,42 @@ func SeedDatabase(conn *pgx.Conn) {
 
 	if count == 0 {
 		buildingQuery := `
-			INSERT INTO building_configs (name, level, hit_points, damage, build_cost, production_per_min, capacity) VALUES 
+			INSERT INTO building_configs (name, level, hit_points, damage, build_cost, production_per_min, capacity, size) VALUES 
 			-- Town Hall
-			('Town Hall', 1, 400, 0, 0, 0, 1000),
-			('Town Hall', 2, 800, 0, 1000, 0, 2500),
-			('Town Hall', 3, 1600, 0, 4000, 0, 10000),
-			('Town Hall', 4, 2000, 0, 25000, 0, 50000),
+			('Town Hall', 1, 400, 0, 0, 0, 1000, 4),
+			('Town Hall', 2, 800, 0, 1000, 0, 2500, 4),
+			('Town Hall', 3, 1600, 0, 4000, 0, 10000, 4),
+			('Town Hall', 4, 2000, 0, 25000, 0, 50000, 4),
 
 			-- Cannon
-			('Cannon', 1, 300, 7, 250, 0, 0),
-			('Cannon', 2, 340, 11, 1000, 0, 0),
-			('Cannon', 3, 400, 15, 4000, 0, 0),
-			('Cannon', 4, 450, 19, 16000, 0, 0),
+			('Cannon', 1, 300, 7, 250, 0, 0, 2),
+			('Cannon', 2, 340, 11, 1000, 0, 0, 2),
+			('Cannon', 3, 400, 15, 4000, 0, 0, 2),
+			('Cannon', 4, 450, 19, 16000, 0, 0, 2),
 
 			-- Archer Tower
-			('Archer Tower', 1, 380, 11, 1000, 0, 0),
-			('Archer Tower', 2, 420, 15, 2000, 0, 0),
-			('Archer Tower', 3, 460, 19, 5000, 0, 0),
-			('Archer Tower', 4, 500, 25, 20000, 0, 0),
+			('Archer Tower', 1, 380, 11, 1000, 0, 0, 2),
+			('Archer Tower', 2, 420, 15, 2000, 0, 0, 2),
+			('Archer Tower', 3, 460, 19, 5000, 0, 0, 2),
+			('Archer Tower', 4, 500, 25, 20000, 0, 0, 2),
 
 			-- Mortar
-			('Mortar', 1, 400, 4, 8000, 0, 0),
-			('Mortar', 2, 450, 5, 32000, 0, 0),
-			('Mortar', 3, 500, 6, 120000, 0, 0),
-			('Mortar', 4, 550, 7, 180000, 0, 0),
+			('Mortar', 1, 400, 4, 8000, 0, 0, 2),
+			('Mortar', 2, 450, 5, 32000, 0, 0, 2),
+			('Mortar', 3, 500, 6, 120000, 0, 0, 2),
+			('Mortar', 4, 550, 7, 180000, 0, 0, 2),
 
 			-- Gold Mine
-			('Gold Mine', 1, 75, 0, 150, 3, 1000),
-			('Gold Mine', 2, 150, 0, 300, 6, 2000),
-			('Gold Mine', 3, 300, 0, 700, 10, 3000),
-			('Gold Mine', 4, 400, 0, 1400, 13, 5000),
+			('Gold Mine', 1, 75, 0, 150, 3, 1000, 2),
+			('Gold Mine', 2, 150, 0, 300, 6, 2000, 2),
+			('Gold Mine', 3, 300, 0, 700, 10, 3000, 2),
+			('Gold Mine', 4, 400, 0, 1400, 13, 5000, 2),
 
 			-- Elixir Collector
-			('Elixir Collector', 1, 75, 0, 150, 3, 1000),
-			('Elixir Collector', 2, 150, 0, 300, 6, 2000),
-			('Elixir Collector', 3, 300, 0, 700, 10, 3000),
-			('Elixir Collector', 4, 400, 0, 1400, 13, 5000);
+			('Elixir Collector', 1, 75, 0, 150, 3, 1000, 2),
+			('Elixir Collector', 2, 150, 0, 300, 6, 2000, 2),
+			('Elixir Collector', 3, 300, 0, 700, 10, 3000, 2),
+			('Elixir Collector', 4, 400, 0, 1400, 13, 5000, 2);
 		`
 		_, err = conn.Exec(ctx, buildingQuery)
 		if err != nil {
