@@ -135,6 +135,31 @@ func AddBuilding(villageID, buildingID, x, y int) (int, error) {
 		return gold, errors.New("Insufficient balance,")
 	}
 
+	if x < 0 || y < 0 || x+size > 36 || y+size > 36 {
+		return gold, errors.New("Building is out of bounds.")
+	}
+
+	var collisionCount int
+	overlapQuery := `
+        SELECT COUNT(*) 
+        FROM village_buildings vb
+        JOIN building_configs bc ON vb.building_id = bc.id
+        WHERE vb.village_id = $1
+          AND $2 < (vb.x + bc.size)
+          AND ($2 + $3) > vb.x
+          AND $4 < (vb.y + bc.size)
+          AND ($4 + $3) > vb.y
+    `
+	err = tx.QueryRow(ctx, overlapQuery, villageID, x, size, y).Scan(&collisionCount)
+
+	if err != nil {
+		return gold, errors.New("Error checking grid.")
+	}
+
+	if collisionCount > 0 {
+		return gold, errors.New("Cannot place building on an existing building.")
+	}
+
 	_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold-$1 WHERE id = $2", buildCost, villageID)
 
 	if err != nil {
