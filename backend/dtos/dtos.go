@@ -46,3 +46,9 @@ type BuildingResponseFromDBDTO struct {
 	X          int `json:"x"`
 	Y          int `json:"y"`
 }
+
+type CollectResponseDTO struct {
+	Message string `json:"message"`
+	Gold    int    `json:"gold"`
+	Elixir  int    `json:"elixir"`
+}
