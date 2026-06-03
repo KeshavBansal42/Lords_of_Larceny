@@ -6,7 +6,8 @@ type RegisterRequestDTO struct {
 }
 
 type RegisterResponseDTO struct {
-	ID int `json:"id"`
+	Message string `json:"message"`
+	ID      int    `json:"id"`
 }
 
 type LoginRequestDTO struct {
@@ -15,7 +16,8 @@ type LoginRequestDTO struct {
 }
 
 type LoginResponseDTO struct {
-	Token string `json:"token"`
+	Message string `json:"message"`
+	Token   string `json:"token"`
 }
 
 type VillageResponseDTO struct {
