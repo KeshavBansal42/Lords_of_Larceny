@@ -23,11 +23,19 @@ func CreateUserAndVillage(username, password_hash string) (int, error) {
 		return 0, errors.New("username already exists")
 	}
 
-	_, err = tx.Exec(ctx, "INSERT INTO villages (user_id, town_hall_level, gold, elixir) VALUES ($1, 1, 1000, 1000)", userID)
+	var villageID int
+	err = tx.QueryRow(ctx, "INSERT INTO villages (user_id, town_hall_level, gold, elixir) VALUES ($1, 1, 1000, 1000) RETURNING id", userID).Scan(&villageID)
 
 	if err != nil {
 
 		return 0, errors.New("failed to initialise village")
+	}
+
+	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_id, x, y) VALUES ($1, 1, 16, 16)", villageID)
+
+	if err != nil {
+
+		return 0, errors.New("failed to add town hall")
 	}
 
 	if err = tx.Commit(ctx); err != nil {
