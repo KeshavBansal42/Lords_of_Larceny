@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/db"
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
@@ -178,4 +179,72 @@ func AddBuilding(userID, buildingID, x, y int) (int, error) {
 	}
 
 	return gold - buildCost, nil
+}
+
+func CollectResources(userID int) (int, int, error) {
+	ctx := context.Background()
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	var villageID int
+	var lastCollectedAt time.Time
+
+	err = tx.QueryRow(ctx, "SELECT id, last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &lastCollectedAt)
+
+	if err != nil {
+		return 0, 0, errors.New("Error fetching village details.")
+	}
+
+	now := time.Now()
+	elapsedMinutes := int(now.Sub(lastCollectedAt).Minutes())
+
+	var goldGen *int
+	var elixirGen *int
+	query := `
+		SELECT 
+			SUM(
+				CASE WHEN bc.name = 'Gold Mine' THEN 
+					LEAST(bc.capacity, bc.production_per_min * $2) 
+				ELSE 0 END
+			) AS total_gold_generated,
+			SUM(
+				CASE WHEN bc.name = 'Elixir Collector' THEN 
+					LEAST(bc.capacity, bc.production_per_min * $2) 
+				ELSE 0 END
+			) AS total_elixir_generated
+		FROM village_buildings vb
+		JOIN building_configs bc ON vb.building_id = bc.id
+		WHERE vb.village_id = $1;
+	`
+	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&goldGen, &elixirGen)
+	if err != nil {
+		return 0, 0, errors.New("error calculating resources")
+	}
+
+	goldToAdd := 0
+	if goldGen != nil {
+		goldToAdd = *goldGen
+	}
+
+	elixirToAdd := 0
+	if elixirGen != nil {
+		elixirToAdd = *elixirGen
+	}
+
+	var newGold int
+	var newElixir int
+	err = tx.QueryRow(ctx, "UPDATE villages SET gold = gold + $1, elixir = elixir + $2, last_collected_at = $3 WHERE id = $4 RETURNING gold, elixir", goldToAdd, elixirToAdd, now, villageID).Scan(&newGold, &newElixir)
+	if err != nil {
+		return 0, 0, errors.New("error updating resources")
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return 0, 0, err
+	}
+
+	return newGold, newElixir, nil
 }
