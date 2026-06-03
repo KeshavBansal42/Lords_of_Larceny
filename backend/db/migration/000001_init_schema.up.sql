@@ -58,3 +58,7 @@ CREATE TABLE battles (
     winner_id INT NOT NULL REFERENCES users(id),
     battle_log JSONB
 );
+
+CREATE INDEX idx_villages_user_id ON villages(user_id);
+CREATE INDEX idx_village_buildings_village_id ON village_buildings(village_id);
+CREATE INDEX idx_village_troops_village_id ON village_troops(village_id);
