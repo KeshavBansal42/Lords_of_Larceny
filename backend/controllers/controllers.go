@@ -43,7 +43,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := dtos.RegisterResponseDTO{
-		ID: userID,
+		Message: "User successfully registered.",
+		ID:      userID,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -90,7 +91,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := dtos.LoginResponseDTO{
-		Token: tokenString,
+		Message: "User successfully logged in",
+		Token:   tokenString,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
