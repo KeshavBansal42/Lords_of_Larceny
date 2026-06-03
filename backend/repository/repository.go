@@ -90,7 +90,7 @@ func GetAllVillageBuildings(villageID int) ([]dtos.BuildingResponseFromDBDTO, er
 	return buildings, nil
 }
 
-func AddBuilding(villageID, buildingID, x, y int) (int, error) {
+func AddBuilding(userID, buildingID, x, y int) (int, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -121,7 +121,8 @@ func AddBuilding(villageID, buildingID, x, y int) (int, error) {
 	var gold int
 	var elixir int
 	var thlevel int
-	err = tx.QueryRow(ctx, "SELECT town_hall_level, gold, elixir FROM villages WHERE id = $1 FOR UPDATE", villageID).Scan(&thlevel, &gold, &elixir)
+	var villageID int
+	err = tx.QueryRow(ctx, "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &thlevel, &gold, &elixir)
 
 	if err != nil {
 		return 0, errors.New("Error fetching village details.")

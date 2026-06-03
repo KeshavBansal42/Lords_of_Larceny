@@ -190,13 +190,7 @@ func AddBuilding(w http.ResponseWriter, r *http.Request) {
 
 	userID := int(userIDFloat)
 
-	villageID, _, _, _, err := repository.GetVillageByUserID(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	gold, err := repository.AddBuilding(villageID, req.BuildingID, req.X, req.Y)
+	gold, err := repository.AddBuilding(userID, req.BuildingID, req.X, req.Y)
 
 	res := dtos.BuildResponseDTO{
 		Message:       "Your building has been created.",
