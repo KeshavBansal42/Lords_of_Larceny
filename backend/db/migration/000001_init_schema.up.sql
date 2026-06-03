@@ -11,7 +11,7 @@ CREATE TABLE villages (
     town_hall_level INT NOT NULL DEFAULT 1,
     gold INT NOT NULL DEFAULT 1000,
     elixir INT NOT NULL DEFAULT 1000,
-    last_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_collected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE building_configs (
