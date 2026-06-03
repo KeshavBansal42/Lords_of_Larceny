@@ -22,7 +22,8 @@ CREATE TABLE building_configs (
     build_cost INT NOT NULL,
     production_per_min INT NOT NULL DEFAULT 0,
     capacity INT NOT NULL DEFAULT 0,
-    size INT NOT NULL DEFAULT 2
+    size INT NOT NULL DEFAULT 2,
+    min_thlevel INT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE troop_configs (
@@ -31,6 +32,7 @@ CREATE TABLE troop_configs (
     level INT NOT NULL,
     hit_points INT NOT NULL,
     damage INT NOT NULL,
+    min_thlevel INT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE village_buildings (
@@ -55,4 +57,4 @@ CREATE TABLE battles (
     defender_id INT NOT NULL REFERENCES users(id),
     winner_id INT NOT NULL REFERENCES users(id),
     battle_log JSONB
-)
+);
