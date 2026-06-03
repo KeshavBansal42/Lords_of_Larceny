@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/db"
+	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
+	"github.com/jackc/pgx/v5"
 )
 
 func CreateUserAndVillage(username, password_hash string) (int, error) {
@@ -57,15 +59,32 @@ func GetUserByUsername(username string) (int, string, error) {
 	return userID, passwordHash, nil
 }
 
-func GetVillageByUserID(userID int) (int, int, int, error) {
+func GetVillageByUserID(userID int) (int, int, int, int, error) {
 	var townHallLevel int
 	var gold int
 	var elixir int
-	err := db.Conn.QueryRow(context.Background(), "SELECT town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&townHallLevel, &gold, &elixir)
+	var villageID int
+	err := db.Conn.QueryRow(context.Background(), "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel, &gold, &elixir)
 
 	if err != nil {
-		return 0, 0, 0, errors.New("Error fetching the village")
+		return 0, 0, 0, 0, errors.New("Error fetching the village")
 	}
 
-	return townHallLevel, gold, elixir, nil
+	return villageID, townHallLevel, gold, elixir, nil
+}
+
+func GetAllVillageBuildings(villageID int) ([]dtos.BuildingResponseFromDBDTO, error) {
+	rows, err := db.Conn.Query(context.Background(), "SELECT building_id, x, y FROM village_buildings WHERE village_id = $1", villageID)
+
+	if err != nil {
+		return nil, errors.New("Error fetching buildings")
+	}
+	defer rows.Close()
+
+	buildings, err := pgx.CollectRows(rows, pgx.RowToStructByName[dtos.BuildingResponseFromDBDTO])
+	if err != nil {
+		return nil, errors.New("Error parsing buildings")
+	}
+
+	return buildings, nil
 }

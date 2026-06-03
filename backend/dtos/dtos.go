@@ -36,3 +36,13 @@ type BuildResponseDTO struct {
 	Message       string `json:"message"`
 	RemainingGold int    `json:"remaining_gold"`
 }
+
+type GetVillageBuildingsResponseDTO struct {
+	Buildings []BuildingResponseFromDBDTO `json:"buildings"`
+}
+
+type BuildingResponseFromDBDTO struct {
+	BuildingId int `json:"building_id"`
+	X          int `json:"x"`
+	Y          int `json:"y"`
+}
