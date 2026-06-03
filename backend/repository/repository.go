@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/db"
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
@@ -87,4 +88,68 @@ func GetAllVillageBuildings(villageID int) ([]dtos.BuildingResponseFromDBDTO, er
 	}
 
 	return buildings, nil
+}
+
+func AddBuilding(villageID, buildingID, x, y int) (int, error) {
+	ctx := context.Background()
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	var name string
+	var buildCost int
+	var size int
+	var level int
+	var min_thlevel int
+	err = tx.QueryRow(ctx, "SELECT name, build_cost, size, level, min_thlevel FROM building_configs WHERE id = $1", buildingID).Scan(&name, &buildCost, &size, &level, &min_thlevel)
+
+	if err != nil {
+		return 0, errors.New("Error fetching building details.")
+	}
+
+	if level != 1 {
+		return 0, fmt.Errorf("Cannot add a level %v machine please upgrade one", level)
+	}
+
+	if name == "Town Hall" {
+		return 0, errors.New("Cannot build another town hall.")
+	}
+
+	var gold int
+	var elixir int
+	var thlevel int
+	err = tx.QueryRow(ctx, "SELECT town_hall_level, gold, elixir FROM villages WHERE id = $1 FOR UPDATE", villageID).Scan(&thlevel, &gold, &elixir)
+
+	if err != nil {
+		return 0, errors.New("Error fetching village details.")
+	}
+
+	if thlevel < min_thlevel {
+		return gold, errors.New("Minimum Town Hall Level requirement not met.")
+	}
+
+	if gold < buildCost {
+		return gold, errors.New("Insufficient balance,")
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold-$1 WHERE id = $2", buildCost, villageID)
+
+	if err != nil {
+		return gold, errors.New("Error updating resources.")
+	}
+
+	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_id, x, y) VALUES ($1, $2, $3, $4)", villageID, buildingID, x, y)
+
+	if err != nil {
+		return gold, errors.New("Error adding building.")
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return gold, err
+	}
+
+	return gold - buildCost, nil
 }
