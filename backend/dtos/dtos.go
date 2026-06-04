@@ -62,3 +62,14 @@ type UpgradeBuildingResponseDTO struct {
 	Message string `json:"message"`
 	Gold    int    `json:"gold"`
 }
+
+type MoveBuildingRequestDTO struct {
+	OldX int `json:"oldx"`
+	OldY int `json:"oldy"`
+	NewX int `json:"newx"`
+	NewY int `json:"newy"`
+}
+
+type MoveBuildingResponseDTO struct {
+	Message string `json:"message"`
+}
