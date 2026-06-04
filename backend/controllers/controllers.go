@@ -237,3 +237,47 @@ func CollectResources(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(res)
 }
+
+func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req dtos.UpgradeBuildingRequestDTO
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid req body.", http.StatusBadRequest)
+		return
+	}
+
+	value := r.Context().Value("userID")
+	userIDFloat, ok := value.(float64)
+	if !ok {
+		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
+		return
+	}
+
+	userID := int(userIDFloat)
+
+	_, _, err = repository.CollectResources(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	gold, err := repository.UpgradeBuilding(userID, req.X, req.Y)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := dtos.UpgradeBuildingResponseDTO{
+		Message: "Building successfully upgraded",
+		Gold:    gold,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
+}
