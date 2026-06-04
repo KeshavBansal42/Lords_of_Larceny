@@ -52,3 +52,13 @@ type CollectResponseDTO struct {
 	Gold    int    `json:"gold"`
 	Elixir  int    `json:"elixir"`
 }
+
+type UpgradeBuildingRequestDTO struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type UpgradeBuildingResponseDTO struct {
+	Message string `json:"message"`
+	Gold    int    `json:"gold"`
+}
