@@ -248,3 +248,75 @@ func CollectResources(userID int) (int, int, error) {
 
 	return newGold, newElixir, nil
 }
+
+func UpgradeBuilding(userId, x, y int) (int, error) {
+	ctx := context.Background()
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	var villageID int
+	var thlevel int
+	var gold int
+
+	err = tx.QueryRow(ctx, "SELECT id, town_hall_level, gold FROM villages WHERE user_id = $1 FOR UPDATE", userId).Scan(&villageID, &thlevel, &gold)
+
+	if err != nil {
+		return 0, errors.New("Error fetching village details.")
+	}
+
+	var buildingName string
+	var buildingLevel int
+	var min_thlevel int
+	query := `
+		SELECT name, level, min_thlevel
+		FROM building_configs bc
+		JOIN village_buildings vb ON vb.building_id = bc.id
+		WHERE vb.village_id = $1
+		AND vb.x = $2
+		AND vb.y = $3
+	`
+	err = tx.QueryRow(ctx, query, villageID, x, y).Scan(&buildingName, &buildingLevel, &min_thlevel)
+
+	if err != nil {
+		return gold, errors.New("Error getting building info")
+	}
+
+	if thlevel < min_thlevel {
+		return gold, errors.New("Minimum town hall level requirement not met")
+	}
+
+	var upgradeCost int
+	var newID int
+	err = tx.QueryRow(ctx, "SELECT build_cost, id FROM building_configs WHERE name = $1 AND level = $2", buildingName, (buildingLevel+1)).Scan(&upgradeCost, &newID)
+
+	if err != nil {
+		return gold, errors.New("Building already at max level.")
+	}
+
+	if gold < upgradeCost {
+		return gold, errors.New("Insufficient gold.")
+	}
+
+	var newGold int
+	err = tx.QueryRow(ctx, "UPDATE villages SET gold = gold - $1 WHERE id = $2 RETURNING gold", upgradeCost, villageID).Scan(&newGold)
+
+	if err != nil {
+		return gold, errors.New("Couldn't update balance")
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE village_buildings SET building_id = $1 WHERE village_id = $2 AND x = $3 AND y = $4", newID, villageID, x, y)
+
+	if err != nil {
+		return gold, errors.New("Couldn't update village building")
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return gold, err
+	}
+
+	return newGold, nil
+}
