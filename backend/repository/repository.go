@@ -320,3 +320,74 @@ func UpgradeBuilding(userId, x, y int) (int, error) {
 
 	return newGold, nil
 }
+
+func MoveBuilding(userID, oldX, oldY, newX, newY int) error {
+	ctx := context.Background()
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var villageID int
+	err = tx.QueryRow(ctx, "SELECT id FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID)
+
+	if err != nil {
+		return errors.New("Error fetching villageID")
+	}
+
+	var size int
+	var villageBuildingID int
+	query := `
+	SELECT bc.size, vb.id
+	FROM building_configs bc
+		JOIN village_buildings vb ON vb.building_id = bc.id
+		WHERE vb.village_id = $1
+		AND vb.x = $2
+		AND vb.y = $3
+	`
+	err = tx.QueryRow(ctx, query, villageID, oldX, oldY).Scan(&size, &villageBuildingID)
+
+	if err != nil {
+		return errors.New("No such building exists.")
+	}
+
+	if newX < 0 || newY < 0 || newX+size > 36 || newY+size > 36 {
+		return errors.New("Out of village bounds.")
+	}
+
+	var collisionCount int
+	overlapQuery := `
+        SELECT COUNT(*) 
+        FROM village_buildings vb
+        JOIN building_configs bc ON vb.building_id = bc.id
+        WHERE vb.village_id = $1
+          AND $2 < (vb.x + bc.size)
+          AND ($2 + $3) > vb.x
+          AND $4 < (vb.y + bc.size)
+          AND ($4 + $3) > vb.y
+		  AND vb.id != $5
+    `
+	err = tx.QueryRow(ctx, overlapQuery, villageID, newX, size, newY, villageBuildingID).Scan(&collisionCount)
+
+	if err != nil {
+		return errors.New("Error checking grid.")
+	}
+
+	if collisionCount > 0 {
+		return errors.New("Cannot place building on an existing building.")
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE village_buildings SET x = $1, y = $2 WHERE id = $3", newX, newY, villageBuildingID)
+
+	if err != nil {
+		return errors.New("Error updating building's co-ordinates")
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
