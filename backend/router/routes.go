@@ -15,6 +15,7 @@ func InitRoutes() *mux.Router {
 	router.HandleFunc("/village/buildings", middleware.RequireAuth(controllers.GetAllVillageBuildings)).Methods("GET")
 	router.HandleFunc("/village/build", middleware.RequireAuth(controllers.AddBuilding)).Methods("POST")
 	router.HandleFunc("/village/collect", middleware.RequireAuth(controllers.CollectResources)).Methods("PUT")
+	router.HandleFunc("/village/upgrade", middleware.RequireAuth(controllers.UpgradeBuilding)).Methods("PUT")
 
 	return router
 }
