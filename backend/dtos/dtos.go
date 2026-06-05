@@ -33,8 +33,9 @@ type BuildRequestDTO struct {
 }
 
 type BuildResponseDTO struct {
-	Message       string `json:"message"`
-	RemainingGold int    `json:"remaining_gold"`
+	Message         string `json:"message"`
+	RemainingGold   int    `json:"remaining_gold"`
+	RemainingElixir int    `json:"remaining_elixir"`
 }
 
 type GetVillageBuildingsResponseDTO struct {
