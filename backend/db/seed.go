@@ -18,12 +18,12 @@ func SeedDatabase(conn *pgx.Conn) {
 
 	if count == 0 {
 		troopQuery := `
-			INSERT INTO troop_configs (name, level, hit_points, damage, min_thlevel) VALUES 
-			('Barbarian', 1, 45, 9, 1),
-			('Archer', 1, 22, 8, 1),
-			('Goblin', 1, 25, 11, 2),
-			('Giant', 1, 400, 12, 3),
-			('Wall Breaker', 1, 20, 10, 4);
+			INSERT INTO troop_configs (name, level, hit_points, damage, min_thlevel, housing_space) VALUES 
+			('Barbarian', 1, 45, 9, 1, 1),
+			('Archer', 1, 22, 8, 1, 1),
+			('Goblin', 1, 25, 11, 2, 1),
+			('Giant', 1, 400, 12, 3, 4),
+			('Wall Breaker', 1, 20, 10, 4, 2);
 		`
 		_, err = conn.Exec(ctx, troopQuery)
 		if err != nil {
