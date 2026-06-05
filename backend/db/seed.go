@@ -73,7 +73,13 @@ func SeedDatabase(conn *pgx.Conn) {
 			('Elixir Collector', 1, 75, 0, 150, 3, 1000, 2, 1),
 			('Elixir Collector', 2, 150, 0, 300, 6, 2000, 2, 2),
 			('Elixir Collector', 3, 300, 0, 700, 10, 3000, 2, 3),
-			('Elixir Collector', 4, 400, 0, 1400, 13, 5000, 2, 4);
+			('Elixir Collector', 4, 400, 0, 1400, 13, 5000, 2, 4),
+
+			--Army Camp
+			('Army Camp', 1, 100, 0, 200, 0, 20, 3, 1),
+			('Army Camp', 2, 150, 0, 2000, 0, 30, 3, 2),
+			('Army Camp', 3, 200, 0, 10000, 0, 35, 3, 3),
+			('Army Camp', 4, 250, 0, 100000, 0, 40, 3, 4);
 		`
 		_, err = conn.Exec(ctx, buildingQuery)
 		if err != nil {
