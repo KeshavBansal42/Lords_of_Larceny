@@ -34,7 +34,8 @@ CREATE TABLE troop_configs (
     level INT NOT NULL,
     hit_points INT NOT NULL,
     damage INT NOT NULL,
-    min_thlevel INT NOT NULL DEFAULT 1
+    min_thlevel INT NOT NULL DEFAULT 1,
+    housing_space INT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE village_buildings (
