@@ -338,6 +338,14 @@ func UpgradeBuilding(userId, x, y int) (int, int, error) {
 		return gold, elixir, errors.New("Couldn't update village building")
 	}
 
+	if buildingName == "Town Hall" {
+		_, err = tx.Exec(ctx, "UPDATE villages SET town_hall_level = $1 WHERE id = $2", (buildingLevel + 1), villageID)
+
+		if err != nil {
+			return gold, elixir, errors.New("Error updating town hall level")
+		}
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		return gold, elixir, err
 	}
