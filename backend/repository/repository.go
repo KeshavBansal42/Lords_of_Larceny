@@ -426,29 +426,30 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 	defer tx.Rollback(ctx)
 
 	var villageID int
-	err = tx.QueryRow(ctx, "SELECT id FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID)
+	var thLevel int
+	err = tx.QueryRow(ctx, "SELECT id, town_hall_level FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &thLevel)
 	if err != nil {
 		return errors.New("Error fetching village details")
 	}
 
 	var maxCapacity int
 	err = tx.QueryRow(ctx, `
-		SELECT COALESCE(SUM(bc.capacity), 0) 
-		FROM village_buildings vb 
-		JOIN building_configs bc ON vb.building_id = bc.id 
-		WHERE vb.village_id = $1 AND bc.name = 'Army Camp'
-	`, villageID).Scan(&maxCapacity)
+        SELECT COALESCE(SUM(bc.capacity), 0) 
+        FROM village_buildings vb 
+        JOIN building_configs bc ON vb.building_id = bc.id 
+        WHERE vb.village_id = $1 AND bc.name = 'Army Camp'
+    `, villageID).Scan(&maxCapacity)
 	if err != nil {
 		return errors.New("Error calculating max army capacity")
 	}
 
 	var currentSpace int
 	err = tx.QueryRow(ctx, `
-		SELECT COALESCE(SUM(vt.quantity * tc.housing_space), 0) 
-		FROM village_troops vt 
-		JOIN troop_configs tc ON vt.troop_id = tc.id 
-		WHERE vt.village_id = $1
-	`, villageID).Scan(&currentSpace)
+        SELECT COALESCE(SUM(vt.quantity * tc.housing_space), 0) 
+        FROM village_troops vt 
+        JOIN troop_configs tc ON vt.troop_id = tc.id 
+        WHERE vt.village_id = $1
+    `, villageID).Scan(&currentSpace)
 	if err != nil {
 		return errors.New("Error calculating current army space")
 	}
@@ -456,9 +457,13 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 	requestedSpace := 0
 	for troopID, quantity := range troopsToTrain {
 		var housingSpace int
-		err = tx.QueryRow(ctx, "SELECT housing_space FROM troop_configs WHERE id = $1", troopID).Scan(&housingSpace)
+		var minThLevel int
+		err = tx.QueryRow(ctx, "SELECT housing_space, min_thlevel FROM troop_configs WHERE id = $1", troopID).Scan(&housingSpace, &minThLevel)
 		if err != nil {
 			return errors.New("Invalid troop ID")
+		}
+		if thLevel < minThLevel {
+			return errors.New("Minimum town hall level requirement not met for requested troop")
 		}
 		requestedSpace += (housingSpace * quantity)
 	}
@@ -469,11 +474,11 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 
 	for troopID, quantity := range troopsToTrain {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO village_troops (village_id, troop_id, quantity) 
-			VALUES ($1, $2, $3) 
-			ON CONFLICT (village_id, troop_id) 
-			DO UPDATE SET quantity = village_troops.quantity + EXCLUDED.quantity
-		`, villageID, troopID, quantity)
+            INSERT INTO village_troops (village_id, troop_id, quantity) 
+            VALUES ($1, $2, $3) 
+            ON CONFLICT (village_id, troop_id) 
+            DO UPDATE SET quantity = village_troops.quantity + EXCLUDED.quantity
+        `, villageID, troopID, quantity)
 		if err != nil {
 			return errors.New("Error training troops")
 		}
