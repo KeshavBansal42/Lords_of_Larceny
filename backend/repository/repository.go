@@ -91,12 +91,12 @@ func GetAllVillageBuildings(villageID int) ([]dtos.BuildingResponseFromDBDTO, er
 	return buildings, nil
 }
 
-func AddBuilding(userID, buildingID, x, y int) (int, error) {
+func AddBuilding(userID, buildingID, x, y int) (int, int, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	defer tx.Rollback(ctx)
 
@@ -105,18 +105,20 @@ func AddBuilding(userID, buildingID, x, y int) (int, error) {
 	var size int
 	var level int
 	var min_thlevel int
-	err = tx.QueryRow(ctx, "SELECT name, build_cost, size, level, min_thlevel FROM building_configs WHERE id = $1", buildingID).Scan(&name, &buildCost, &size, &level, &min_thlevel)
+	var resourceType string
+
+	err = tx.QueryRow(ctx, "SELECT name, build_cost, size, level, min_thlevel, build_resource_type FROM building_configs WHERE id = $1", buildingID).Scan(&name, &buildCost, &size, &level, &min_thlevel, &resourceType)
 
 	if err != nil {
-		return 0, errors.New("Error fetching building details.")
+		return 0, 0, errors.New("Error fetching building details.")
 	}
 
 	if level != 1 {
-		return 0, fmt.Errorf("Cannot add a level %v machine please upgrade one", level)
+		return 0, 0, fmt.Errorf("Cannot add a level %v machine please upgrade one", level)
 	}
 
 	if name == "Town Hall" {
-		return 0, errors.New("Cannot build another town hall.")
+		return 0, 0, errors.New("Cannot build another town hall.")
 	}
 
 	var gold int
@@ -126,19 +128,15 @@ func AddBuilding(userID, buildingID, x, y int) (int, error) {
 	err = tx.QueryRow(ctx, "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &thlevel, &gold, &elixir)
 
 	if err != nil {
-		return 0, errors.New("Error fetching village details.")
+		return 0, 0, errors.New("Error fetching village details.")
 	}
 
 	if thlevel < min_thlevel {
-		return gold, errors.New("Minimum Town Hall Level requirement not met.")
-	}
-
-	if gold < buildCost {
-		return gold, errors.New("Insufficient balance,")
+		return gold, elixir, errors.New("Minimum Town Hall Level requirement not met.")
 	}
 
 	if x < 0 || y < 0 || x+size > 36 || y+size > 36 {
-		return gold, errors.New("Building is out of bounds.")
+		return gold, elixir, errors.New("Building is out of bounds.")
 	}
 
 	var collisionCount int
@@ -155,30 +153,44 @@ func AddBuilding(userID, buildingID, x, y int) (int, error) {
 	err = tx.QueryRow(ctx, overlapQuery, villageID, x, size, y).Scan(&collisionCount)
 
 	if err != nil {
-		return gold, errors.New("Error checking grid.")
+		return gold, elixir, errors.New("Error checking grid.")
 	}
 
 	if collisionCount > 0 {
-		return gold, errors.New("Cannot place building on an existing building.")
+		return gold, elixir, errors.New("Cannot place building on an existing building.")
 	}
 
-	_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold-$1 WHERE id = $2", buildCost, villageID)
+	if resourceType == "gold" {
+		if gold < buildCost {
+			return gold, elixir, errors.New("Insufficient gold.")
+		}
+		_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold-$1 WHERE id = $2", buildCost, villageID)
+		gold -= buildCost
+	} else if resourceType == "elixir" {
+		if elixir < buildCost {
+			return gold, elixir, errors.New("Insufficient elixir.")
+		}
+		_, err = tx.Exec(ctx, "UPDATE villages SET elixir = elixir-$1 WHERE id = $2", buildCost, villageID)
+		elixir -= buildCost
+	} else {
+		return gold, elixir, errors.New("Invalid resource type configured for this building.")
+	}
 
 	if err != nil {
-		return gold, errors.New("Error updating resources.")
+		return gold, elixir, errors.New("Error updating resources.")
 	}
 
 	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_id, x, y) VALUES ($1, $2, $3, $4)", villageID, buildingID, x, y)
 
 	if err != nil {
-		return gold, errors.New("Error adding building.")
+		return gold, elixir, errors.New("Error adding building.")
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return gold, err
+		return gold, elixir, err
 	}
 
-	return gold - buildCost, nil
+	return gold, elixir, nil
 }
 
 func CollectResources(userID int) (int, int, error) {
