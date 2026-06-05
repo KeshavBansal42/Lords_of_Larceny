@@ -18,20 +18,27 @@ type Village struct {
 }
 
 type BuildingConfig struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Level     int    `json:"level"`
-	HitPoints int    `json:"hit_points"`
-	Damage    int    `json:"damage"`
-	BuildCost int    `json:"build_cost"`
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	Level             int    `json:"level"`
+	HitPoints         int    `json:"hit_points"`
+	Damage            int    `json:"damage"`
+	BuildCost         int    `json:"build_cost"`
+	BuildResourceType string `json:"build_resource_type"`
+	ProductionPerMin  int    `json:"production_per_min"`
+	Capacity          int    `json:"capacity"`
+	Size              int    `json:"size"`
+	MinThLevel        int    `json:"min_thlevel"`
 }
 
 type TroopConfig struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Level     int    `json:"level"`
-	HitPoints int    `json:"hit_points"`
-	Damage    int    `json:"damage"`
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Level        int    `json:"level"`
+	HitPoints    int    `json:"hit_points"`
+	Damage       int    `json:"damage"`
+	MinThLevel   int    `json:"min_thlevel"`
+	HousingSpace int    `json:"housing_space"`
 }
 
 type VillageBuilding struct {
