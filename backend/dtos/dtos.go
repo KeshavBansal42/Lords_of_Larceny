@@ -1,5 +1,7 @@
 package dtos
 
+import "github.com/KeshavBansal42/Lords_of_Larceny/backend/models"
+
 type RegisterRequestDTO struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -91,4 +93,9 @@ type TroopResponseFromDBDTO struct {
 
 type GetVillageTroopsResponseDTO struct {
 	Troops []TroopResponseFromDBDTO `json:"troops"`
+}
+
+type GameConfigsResponseDTO struct {
+	Buildings []models.BuildingConfig `json:"buildings"`
+	Troops    []models.TroopConfig    `json:"troops"`
 }
