@@ -498,3 +498,19 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 
 	return nil
 }
+
+func GetAllVillageTroops(villageID int) ([]dtos.TroopResponseFromDBDTO, error) {
+	rows, err := db.Conn.Query(context.Background(), "SELECT troop_id, quantity FROM village_troops WHERE village_id = $1", villageID)
+
+	if err != nil {
+		return nil, errors.New("Error fetching troops")
+	}
+	defer rows.Close()
+
+	troops, err := pgx.CollectRows(rows, pgx.RowToStructByName[dtos.TroopResponseFromDBDTO])
+	if err != nil {
+		return nil, errors.New("Error parsing troops")
+	}
+
+	return troops, nil
+}
