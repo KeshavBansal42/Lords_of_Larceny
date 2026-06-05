@@ -190,15 +190,16 @@ func AddBuilding(w http.ResponseWriter, r *http.Request) {
 
 	userID := int(userIDFloat)
 
-	gold, err := repository.AddBuilding(userID, req.BuildingID, req.X, req.Y)
+	gold, elixir, err := repository.AddBuilding(userID, req.BuildingID, req.X, req.Y)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	res := dtos.BuildResponseDTO{
-		Message:       "Your building has been created.",
-		RemainingGold: gold,
+		Message:         "Your building has been created.",
+		RemainingGold:   gold,
+		RemainingElixir: elixir,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
