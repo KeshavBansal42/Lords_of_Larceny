@@ -62,6 +62,7 @@ type UpgradeBuildingRequestDTO struct {
 type UpgradeBuildingResponseDTO struct {
 	Message string `json:"message"`
 	Gold    int    `json:"gold"`
+	Elixir  int    `json:"elixir"`
 }
 
 type MoveBuildingRequestDTO struct {

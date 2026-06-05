@@ -267,7 +267,7 @@ func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gold, err := repository.UpgradeBuilding(userID, req.X, req.Y)
+	gold, elixir, err := repository.UpgradeBuilding(userID, req.X, req.Y)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -276,6 +276,7 @@ func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
 	res := dtos.UpgradeBuildingResponseDTO{
 		Message: "Building successfully upgraded",
 		Gold:    gold,
+		Elixir:  elixir,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
