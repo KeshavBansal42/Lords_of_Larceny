@@ -75,3 +75,11 @@ type MoveBuildingRequestDTO struct {
 type MoveBuildingResponseDTO struct {
 	Message string `json:"message"`
 }
+
+type TrainTroopsRequestDTO struct {
+	TroopsToTrain map[int]int `json:"troopstotrain"`
+}
+
+type TrainTroopsResponseDTO struct {
+	Message string `json:"message"`
+}
