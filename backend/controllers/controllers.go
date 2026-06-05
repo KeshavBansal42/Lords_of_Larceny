@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/repository"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -411,6 +413,34 @@ func GetGameConfigs(w http.ResponseWriter, r *http.Request) {
 	res := dtos.GameConfigsResponseDTO{
 		Buildings: buildings,
 		Troops:    troops,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
+}
+
+func ScoutVillage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	targetIDStr := vars["id"]
+	targetUserID, err := strconv.Atoi(targetIDStr)
+	if err != nil {
+		http.Error(w, "Invalid target user ID.", http.StatusBadRequest)
+		return
+	}
+
+	username, thLevel, gold, elixir, buildings, err := repository.ScoutVillage(targetUserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	res := dtos.ScoutVillageResponseDTO{
+		Username:      username,
+		TownHallLevel: thLevel,
+		Gold:          gold,
+		Elixir:        elixir,
+		Buildings:     buildings,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

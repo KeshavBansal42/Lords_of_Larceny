@@ -12,6 +12,7 @@ func InitRoutes() *mux.Router {
 	router.HandleFunc("/register", controllers.Register).Methods("POST")
 	router.HandleFunc("/login", controllers.Login).Methods("POST")
 	router.HandleFunc("/village", middleware.RequireAuth(controllers.GetVillage)).Methods("GET")
+	router.HandleFunc("/village/{id}/scout", middleware.RequireAuth(controllers.ScoutVillage)).Methods("GET")
 	router.HandleFunc("/village/buildings", middleware.RequireAuth(controllers.GetAllVillageBuildings)).Methods("GET")
 	router.HandleFunc("/village/buildings/build", middleware.RequireAuth(controllers.AddBuilding)).Methods("POST")
 	router.HandleFunc("/village/buildings/upgrade", middleware.RequireAuth(controllers.UpgradeBuilding)).Methods("PUT")

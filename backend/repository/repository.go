@@ -551,3 +551,37 @@ func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
 
 	return buildings, troops, nil
 }
+
+func ScoutVillage(targetUserID int) (string, int, int, int, []dtos.BuildingResponseFromDBDTO, error) {
+	ctx := context.Background()
+
+	var username string
+	var villageID int
+	var thLevel int
+	var gold int
+	var elixir int
+
+	userQuery := `
+		SELECT u.username, v.id, v.town_hall_level, v.gold, v.elixir 
+		FROM villages v
+		JOIN users u ON v.user_id = u.id
+		WHERE v.user_id = $1
+	`
+	err := db.Conn.QueryRow(ctx, userQuery, targetUserID).Scan(&username, &villageID, &thLevel, &gold, &elixir)
+	if err != nil {
+		return "", 0, 0, 0, nil, errors.New("Village not found")
+	}
+
+	buildingRows, err := db.Conn.Query(ctx, "SELECT building_id, x, y FROM village_buildings WHERE village_id = $1", villageID)
+	if err != nil {
+		return "", 0, 0, 0, nil, errors.New("Error fetching enemy buildings")
+	}
+	defer buildingRows.Close()
+
+	buildings, err := pgx.CollectRows(buildingRows, pgx.RowToStructByName[dtos.BuildingResponseFromDBDTO])
+	if err != nil {
+		return "", 0, 0, 0, nil, errors.New("Error parsing enemy buildings")
+	}
+
+	return username, thLevel, gold, elixir, buildings, nil
+}
