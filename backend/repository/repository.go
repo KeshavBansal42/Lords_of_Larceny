@@ -519,7 +519,11 @@ func GetAllVillageTroops(villageID int) ([]dtos.TroopResponseFromDBDTO, error) {
 func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
 	ctx := context.Background()
 
-	buildingRows, err := db.Conn.Query(ctx, "SELECT id, name, level, hit_points, damage, build_cost, build_resource_type, production_per_min, capacity, size, min_thlevel FROM building_configs")
+	buildingRows, err := db.Conn.Query(ctx, `
+		SELECT id, name, level, hit_points, damage, build_cost, build_resource_type, production_per_min, capacity, size, min_thlevel 
+		FROM building_configs
+		ORDER BY MIN(id) OVER (PARTITION BY name) ASC, level ASC
+	`)
 	if err != nil {
 		return nil, nil, errors.New("failed to fetch building configs")
 	}
@@ -530,7 +534,11 @@ func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
 		return nil, nil, errors.New("failed to parse building configs")
 	}
 
-	troopRows, err := db.Conn.Query(ctx, "SELECT id, name, level, hit_points, damage, min_thlevel, housing_space FROM troop_configs")
+	troopRows, err := db.Conn.Query(ctx, `
+		SELECT id, name, level, hit_points, damage, min_thlevel, housing_space 
+		FROM troop_configs
+		ORDER BY MIN(id) OVER (PARTITION BY name) ASC, level ASC
+	`)
 	if err != nil {
 		return nil, nil, errors.New("failed to fetch troop configs")
 	}
