@@ -592,10 +592,22 @@ func Matchmake(userID int) (int, error) {
 
 	var villageID int
 	var townHallLevel int
-	err := db.Conn.QueryRow(ctx, "SELECT id, town_hall_level FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel)
+	var troopCount int
+	query := `
+        SELECT v.id, v.town_hall_level, COALESCE(SUM(vt.quantity), 0)
+        FROM villages v
+        LEFT JOIN village_troops vt ON v.id = vt.village_id
+        WHERE v.user_id = $1
+        GROUP BY v.id, v.town_hall_level
+    `
+	err := db.Conn.QueryRow(ctx, query, userID).Scan(&villageID, &townHallLevel, &troopCount)
 
 	if err != nil {
 		return 0, errors.New("Error finding user info.")
+	}
+
+	if troopCount == 0 {
+		return 0, errors.New("You need an army to attack")
 	}
 
 	rows, err := db.Conn.Query(ctx, "SELECT id FROM villages WHERE id != $1 AND town_hall_level BETWEEN $2 AND $3 LIMIT 50", villageID, (townHallLevel - 1), (townHallLevel + 1))
