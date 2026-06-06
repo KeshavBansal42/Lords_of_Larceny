@@ -111,3 +111,8 @@ type ScoutVillageResponseDTO struct {
 type MatchmakeResponseFromDBDTO struct {
 	VillageID int `db:"id"`
 }
+
+type MatchmakeResponseDTO struct {
+	Message   string `json:"message"`
+	VillageID int    `json:"villageid"`
+}
