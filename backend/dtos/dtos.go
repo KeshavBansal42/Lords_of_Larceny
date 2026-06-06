@@ -107,3 +107,7 @@ type ScoutVillageResponseDTO struct {
 	Elixir        int                         `json:"elixir"`
 	Buildings     []BuildingResponseFromDBDTO `json:"buildings"`
 }
+
+type MatchmakeResponseFromDBDTO struct {
+	VillageID int `db:"id"`
+}
