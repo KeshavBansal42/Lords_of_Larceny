@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/db"
@@ -584,4 +585,37 @@ func ScoutVillage(targetUserID int) (string, int, int, int, []dtos.BuildingRespo
 	}
 
 	return username, thLevel, gold, elixir, buildings, nil
+}
+
+func Matchmake(userID int) (int, error) {
+	ctx := context.Background()
+
+	var villageID int
+	var townHallLevel int
+	err := db.Conn.QueryRow(ctx, "SELECT id, town_hall_level FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel)
+
+	if err != nil {
+		return 0, errors.New("Error finding user info.")
+	}
+
+	rows, err := db.Conn.Query(ctx, "SELECT id FROM villages WHERE id != $1 AND town_hall_level BETWEEN $2 AND $3 LIMIT 50", villageID, (townHallLevel - 1), (townHallLevel + 1))
+
+	if err != nil {
+		return 0, errors.New("Error fetching users")
+	}
+	defer rows.Close()
+
+	villages, err := pgx.CollectRows(rows, pgx.RowToStructByName[dtos.MatchmakeResponseFromDBDTO])
+	if err != nil {
+		return 0, errors.New("Failed to parse villages")
+	}
+
+	if len(villages) == 0 {
+		return 0, errors.New("No worthy opponents exist.")
+	}
+
+	randomIndex := rand.Intn(len(villages))
+	selectedOpponent := villages[randomIndex]
+
+	return selectedOpponent.VillageID, nil
 }
