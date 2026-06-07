@@ -25,7 +25,8 @@ CREATE TABLE building_configs (
     production_per_min INT NOT NULL DEFAULT 0,
     capacity INT NOT NULL DEFAULT 0,
     size INT NOT NULL DEFAULT 2,
-    min_thlevel INT NOT NULL DEFAULT 1
+    min_thlevel INT NOT NULL DEFAULT 1,
+    range INT NOT NULL DEFAULT 4
 );
 
 CREATE TABLE troop_configs (
@@ -35,7 +36,9 @@ CREATE TABLE troop_configs (
     hit_points INT NOT NULL,
     damage INT NOT NULL,
     min_thlevel INT NOT NULL DEFAULT 1,
-    housing_space INT NOT NULL DEFAULT 1
+    housing_space INT NOT NULL DEFAULT 1,
+    range INT NOT NULL DEFAULT 1,
+    speed INT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE village_buildings (
