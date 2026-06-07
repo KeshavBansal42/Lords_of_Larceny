@@ -13,6 +13,6 @@ func main() {
 
 	r := router.InitRoutes()
 
-	addrString := os.Getenv("SERVER_URI")
+	addrString := os.Getenv("SERVER_URL")
 	http.ListenAndServe(addrString, r)
 }

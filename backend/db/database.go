@@ -16,7 +16,7 @@ func InitDB() {
 	if err != nil {
 		log.Println("Error loading .env file")
 	}
-	connectionString := os.Getenv("DB_URI")
+	connectionString := os.Getenv("DATABASE_URL")
 
 	Conn, err = pgx.Connect(context.Background(), connectionString)
 	if err != nil {

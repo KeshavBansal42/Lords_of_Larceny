@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16.14
+    container_name: lol_db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: lol_migrate
+    volumes:
+      - ./backend/db/migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=${DATABASE_URL}
+      - up
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Your Go API
+  api:
+    build: ./backend
+    container_name: lol_api
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
