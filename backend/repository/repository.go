@@ -663,6 +663,7 @@ func Populate(userID int, liveBuildings *map[string]*models.LiveBuilding, liveTr
 			CurrentHP:  buildingConfigs[building.BuildingId].HitPoints,
 			Damage:     buildingConfigs[building.BuildingId].Damage,
 			TargetID:   "",
+			Range:      buildingConfigs[building.BuildingId].Range,
 		}
 	}
 	for i, troop := range drops {
