@@ -11,18 +11,29 @@ func InitRoutes() *mux.Router {
 
 	router.HandleFunc("/register", controllers.Register).Methods("POST")
 	router.HandleFunc("/login", controllers.Login).Methods("POST")
-	router.HandleFunc("/village", middleware.RequireAuth(controllers.GetVillage)).Methods("GET")
-	router.HandleFunc("/village/{id}/scout", middleware.RequireAuth(controllers.ScoutVillage)).Methods("GET")
-	router.HandleFunc("/village/buildings", middleware.RequireAuth(controllers.GetAllVillageBuildings)).Methods("GET")
-	router.HandleFunc("/village/buildings/build", middleware.RequireAuth(controllers.AddBuilding)).Methods("POST")
-	router.HandleFunc("/village/buildings/upgrade", middleware.RequireAuth(controllers.UpgradeBuilding)).Methods("PUT")
-	router.HandleFunc("/village/buildings/move", middleware.RequireAuth(controllers.MoveBuilding)).Methods("PUT")
-	router.HandleFunc("/village/troops", middleware.RequireAuth(controllers.GetAllVillageTroops)).Methods("GET")
-	router.HandleFunc("/village/troops/train", middleware.RequireAuth(controllers.TrainTroops)).Methods("PUT")
-	router.HandleFunc("/village/resources/collect", middleware.RequireAuth(controllers.CollectResources)).Methods("PUT")
 	router.HandleFunc("/game/configs", controllers.GetGameConfigs).Methods("GET")
-	router.HandleFunc("/battle/matchmake", middleware.RequireAuth(controllers.Matchmake)).Methods("GET")
-	router.HandleFunc("/battle/attack", middleware.RequireAuth(controllers.Battle)).Methods("POST")
+
+	villageRouter := router.PathPrefix("/village").Subrouter()
+	villageRouter.Use(middleware.RequireAuth)
+
+	villageRouter.HandleFunc("/", controllers.GetVillage).Methods("GET")
+	villageRouter.HandleFunc("/{id}/scout", controllers.ScoutVillage).Methods("GET")
+
+	villageRouter.HandleFunc("/buildings", controllers.GetAllVillageBuildings).Methods("GET")
+	villageRouter.HandleFunc("/buildings/build", controllers.AddBuilding).Methods("POST")
+	villageRouter.HandleFunc("/buildings/upgrade", controllers.UpgradeBuilding).Methods("PUT")
+	villageRouter.HandleFunc("/buildings/move", controllers.MoveBuilding).Methods("PUT")
+
+	villageRouter.HandleFunc("/troops", controllers.GetAllVillageTroops).Methods("GET")
+	villageRouter.HandleFunc("/troops/train", controllers.TrainTroops).Methods("PUT")
+
+	villageRouter.HandleFunc("/resources/collect", controllers.CollectResources).Methods("PUT")
+
+	battleRouter := router.PathPrefix("/battle").Subrouter()
+	battleRouter.Use(middleware.RequireAuth)
+
+	router.HandleFunc("/matchmake", controllers.Matchmake).Methods("GET")
+	router.HandleFunc("/attack", controllers.Battle).Methods("POST")
 
 	return router
 }
