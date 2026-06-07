@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -16,14 +15,10 @@ func GetVillage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
+	userID, err := getUserID(w, r)
+	if err != nil {
 		return
 	}
-
-	userID := int(userIDFloat)
 
 	_, thlevel, gold, elixir, err := repository.GetVillageByUserID(userID)
 	if err != nil {
@@ -37,9 +32,7 @@ func GetVillage(w http.ResponseWriter, r *http.Request) {
 		Elixir:        elixir,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
 
 func CollectResources(w http.ResponseWriter, r *http.Request) {
@@ -48,14 +41,10 @@ func CollectResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
+	userID, err := getUserID(w, r)
+	if err != nil {
 		return
 	}
-
-	userID := int(userIDFloat)
 
 	gold, elixir, err := repository.CollectResources(userID)
 	if err != nil {
@@ -69,9 +58,7 @@ func CollectResources(w http.ResponseWriter, r *http.Request) {
 		Elixir:  elixir,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
 
 func ScoutVillage(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +84,5 @@ func ScoutVillage(w http.ResponseWriter, r *http.Request) {
 		Buildings:     buildings,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }

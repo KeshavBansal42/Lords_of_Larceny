@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
@@ -25,7 +24,5 @@ func GetGameConfigs(w http.ResponseWriter, r *http.Request) {
 		Troops:    troops,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }

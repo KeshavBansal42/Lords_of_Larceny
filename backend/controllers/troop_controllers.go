@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
@@ -15,20 +14,15 @@ func TrainTroops(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.TrainTroopsRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
+	check := parseRequest(w, r, &req)
+	if !check {
+		return
+	}
+
+	userID, err := getUserID(w, r)
 	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
 		return
 	}
-
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
-		return
-	}
-
-	userID := int(userIDFloat)
 
 	err = repository.TrainTroops(userID, req.TroopsToTrain)
 
@@ -41,9 +35,7 @@ func TrainTroops(w http.ResponseWriter, r *http.Request) {
 		Message: "Troops trained successfully",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
 
 func GetAllVillageTroops(w http.ResponseWriter, r *http.Request) {
@@ -52,14 +44,10 @@ func GetAllVillageTroops(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
+	userID, err := getUserID(w, r)
+	if err != nil {
 		return
 	}
-
-	userID := int(userIDFloat)
 
 	villageID, _, _, _, err := repository.GetVillageByUserID(userID)
 	if err != nil {
@@ -77,7 +65,5 @@ func GetAllVillageTroops(w http.ResponseWriter, r *http.Request) {
 		Troops: troops,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }

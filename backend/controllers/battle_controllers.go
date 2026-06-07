@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
@@ -14,14 +13,10 @@ func Matchmake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
+	userID, err := getUserID(w, r)
+	if err != nil {
 		return
 	}
-
-	userID := int(userIDFloat)
 
 	villageID, err := repository.Matchmake(userID)
 	if err != nil {
@@ -34,9 +29,7 @@ func Matchmake(w http.ResponseWriter, r *http.Request) {
 		VillageID: villageID,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
 
 func Battle(w http.ResponseWriter, r *http.Request) {
@@ -46,20 +39,15 @@ func Battle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.AttackRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
+	check := parseRequest(w, r, &req)
+	if !check {
+		return
+	}
+
+	userID, err := getUserID(w, r)
 	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
 		return
 	}
-
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
-		return
-	}
-
-	userID := int(userIDFloat)
 
 	damage, lootedGold, lootedElixir, battleLog, err := repository.Battle(userID, req.TargetUserID, req.Drops)
 	if err != nil {
@@ -74,7 +62,5 @@ func Battle(w http.ResponseWriter, r *http.Request) {
 		Log:                 battleLog,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }

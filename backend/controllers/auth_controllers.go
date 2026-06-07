@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 	"time"
@@ -24,9 +23,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.RegisterRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
+	check := parseRequest(w, r, &req)
+	if !check {
 		return
 	}
 
@@ -47,9 +45,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		ID:      userID,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusCreated, res)
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -59,9 +55,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.LoginRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
+	check := parseRequest(w, r, &req)
+	if !check {
 		return
 	}
 
@@ -95,7 +90,5 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Token:   tokenString,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
@@ -14,14 +13,10 @@ func GetAllVillageBuildings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
+	userID, err := getUserID(w, r)
+	if err != nil {
 		return
 	}
-
-	userID := int(userIDFloat)
 
 	villageID, _, _, _, err := repository.GetVillageByUserID(userID)
 	if err != nil {
@@ -39,9 +34,7 @@ func GetAllVillageBuildings(w http.ResponseWriter, r *http.Request) {
 		Buildings: buildings,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
 
 func AddBuilding(w http.ResponseWriter, r *http.Request) {
@@ -51,20 +44,15 @@ func AddBuilding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.BuildRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
+	check := parseRequest(w, r, &req)
+	if !check {
+		return
+	}
+
+	userID, err := getUserID(w, r)
 	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
 		return
 	}
-
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
-		return
-	}
-
-	userID := int(userIDFloat)
 
 	gold, elixir, err := repository.AddBuilding(userID, req.BuildingID, req.X, req.Y)
 	if err != nil {
@@ -78,9 +66,7 @@ func AddBuilding(w http.ResponseWriter, r *http.Request) {
 		RemainingElixir: elixir,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusCreated, res)
 }
 
 func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
@@ -90,20 +76,15 @@ func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.UpgradeBuildingRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
+	check := parseRequest(w, r, &req)
+	if !check {
+		return
+	}
+
+	userID, err := getUserID(w, r)
 	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
 		return
 	}
-
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
-		return
-	}
-
-	userID := int(userIDFloat)
 
 	_, _, err = repository.CollectResources(userID)
 	if err != nil {
@@ -123,9 +104,7 @@ func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
 		Elixir:  elixir,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
 
 func MoveBuilding(w http.ResponseWriter, r *http.Request) {
@@ -135,20 +114,15 @@ func MoveBuilding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dtos.MoveBuildingRequestDTO
-	err := json.NewDecoder(r.Body).Decode(&req)
+	check := parseRequest(w, r, &req)
+	if !check {
+		return
+	}
+
+	userID, err := getUserID(w, r)
 	if err != nil {
-		http.Error(w, "Invalid req body.", http.StatusBadRequest)
 		return
 	}
-
-	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
-	if !ok {
-		http.Error(w, "Invalid user ID in token", http.StatusInternalServerError)
-		return
-	}
-
-	userID := int(userIDFloat)
 
 	err = repository.MoveBuilding(userID, req.OldX, req.OldY, req.NewX, req.NewY)
 
@@ -161,7 +135,5 @@ func MoveBuilding(w http.ResponseWriter, r *http.Request) {
 		Message: "Building moved successfully",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(res)
+	respond(w, http.StatusOK, res)
 }
