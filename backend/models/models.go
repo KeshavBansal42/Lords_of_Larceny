@@ -29,6 +29,7 @@ type BuildingConfig struct {
 	Capacity          int    `json:"capacity"`
 	Size              int    `json:"size"`
 	MinThLevel        int    `json:"min_thlevel"`
+	Range             int    `json:"range"`
 }
 
 type TroopConfig struct {
@@ -39,6 +40,8 @@ type TroopConfig struct {
 	Damage       int    `json:"damage"`
 	MinThLevel   int    `json:"min_thlevel"`
 	HousingSpace int    `json:"housing_space"`
+	Range        int    `json:"range"`
+	Speed        int    `json:"speed"`
 }
 
 type VillageBuilding struct {
@@ -53,4 +56,29 @@ type VillageTroop struct {
 	VillageID int `json:"village_id"`
 	TroopID   int `json:"troop_id"`
 	Quantity  int `json:"quantity"`
+}
+
+type LiveBuilding struct {
+	ID         string
+	BuildingID int
+	X          int
+	Y          int
+	MaxHP      int
+	CurrentHP  int
+	Damage     int
+	TargetID   string
+	Range      int
+}
+
+type LiveTroop struct {
+	ID        string
+	TroopID   int
+	X         float64
+	Y         float64
+	MaxHP     int
+	CurrentHP int
+	Damage    int
+	Range     int
+	Speed     int
+	TargetID  string
 }
