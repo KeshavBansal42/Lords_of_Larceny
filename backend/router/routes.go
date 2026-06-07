@@ -22,6 +22,7 @@ func InitRoutes() *mux.Router {
 	router.HandleFunc("/village/resources/collect", middleware.RequireAuth(controllers.CollectResources)).Methods("PUT")
 	router.HandleFunc("/game/configs", controllers.GetGameConfigs).Methods("GET")
 	router.HandleFunc("/battle/matchmake", middleware.RequireAuth(controllers.Matchmake)).Methods("GET")
+	router.HandleFunc("/battle/attack", middleware.RequireAuth(controllers.Battle)).Methods("POST")
 
 	return router
 }
