@@ -37,7 +37,7 @@ func Matchmake(userID int) (int, error) {
 		return 0, errors.New("You need an army to attack")
 	}
 
-	rows, err := db.Conn.Query(ctx, "SELECT user_id FROM villages WHERE id != $1 AND town_hall_level BETWEEN $2 AND $3 LIMIT 50", villageID, (townHallLevel - 1), (townHallLevel + 1))
+	rows, err := db.Conn.Query(ctx, "SELECT user_id FROM villages WHERE id != $1 AND town_hall_level BETWEEN $2 AND $3 AND last_attacked_at < NOW() - INTERVAL '6 hours' LIMIT 50", villageID, (townHallLevel - 1), (townHallLevel + 1))
 
 	if err != nil {
 		return 0, errors.New("Error fetching users")
@@ -304,7 +304,7 @@ func Battle(userID int, targetUserID int, drops []dtos.TroopDropDTO) (int, int, 
 		winnerID = targetUserID
 	}
 
-	_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold - $1, elixir = elixir - $2 WHERE user_id = $3", lootedGold, lootedElixir, targetUserID)
+	_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold - $1, elixir = elixir - $2, last_attacked_at = NOW() WHERE user_id = $3", lootedGold, lootedElixir, targetUserID)
 	if err != nil {
 		return 0, 0, 0, nil, errors.New("Error deducting resources")
 	}
