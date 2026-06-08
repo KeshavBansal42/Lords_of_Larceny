@@ -32,8 +32,8 @@ func InitRoutes() *mux.Router {
 	battleRouter := router.PathPrefix("/battle").Subrouter()
 	battleRouter.Use(middleware.RequireAuth)
 
-	router.HandleFunc("/matchmake", controllers.Matchmake).Methods("GET")
-	router.HandleFunc("/attack", controllers.Battle).Methods("POST")
+	battleRouter.HandleFunc("/matchmake", controllers.Matchmake).Methods("GET")
+	battleRouter.HandleFunc("/attack", controllers.Battle).Methods("POST")
 
 	return router
 }
