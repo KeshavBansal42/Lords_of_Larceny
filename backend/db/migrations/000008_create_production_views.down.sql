@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS village_production_stats;
