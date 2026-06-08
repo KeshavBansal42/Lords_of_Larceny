@@ -98,21 +98,12 @@ func CollectResources(userID int) (int, int, error) {
 	var goldGen *int
 	var elixirGen *int
 	query := `
-		SELECT 
-			SUM(
-				CASE WHEN bc.name = 'Gold Mine' THEN 
-					LEAST(bc.capacity, bc.production_per_min * $2) 
-				ELSE 0 END
-			) AS total_gold_generated,
-			SUM(
-				CASE WHEN bc.name = 'Elixir Collector' THEN 
-					LEAST(bc.capacity, bc.production_per_min * $2) 
-				ELSE 0 END
-			) AS total_elixir_generated
-		FROM village_buildings vb
-		JOIN building_configs bc ON vb.building_id = bc.id
-		WHERE vb.village_id = $1;
-	`
+        SELECT 
+            LEAST(total_gold_cap, total_gold_rate * $2) AS total_gold_generated,
+            LEAST(total_elixir_cap, total_elixir_rate * $2) AS total_elixir_generated
+        FROM village_production_stats
+        WHERE village_id = $1;
+    `
 	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&goldGen, &elixirGen)
 	if err != nil {
 		return 0, 0, errors.New("error calculating resources")
