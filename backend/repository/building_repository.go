@@ -146,7 +146,7 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 	if buildingName == "Gold Mine" {
 		var goldLastCollected time.Time
 		err = tx.QueryRow(ctx, "SELECT gold_last_collected_at FROM villages WHERE id = $1", villageID).Scan(&goldLastCollected)
-		elapsedMinutes := int(time.Now().Sub(goldLastCollected).Minutes())
+		elapsedMinutes := int(time.Since(goldLastCollected).Minutes())
 
 		var goldGen *int
 		err = tx.QueryRow(ctx, "SELECT LEAST(total_gold_cap, total_gold_rate * $2) FROM village_production_stats WHERE village_id = $1", villageID, elapsedMinutes).Scan(&goldGen)
@@ -156,7 +156,7 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 	} else if buildingName == "Elixir Collector" {
 		var elixirLastCollected time.Time
 		err = tx.QueryRow(ctx, "SELECT elixir_last_collected_at FROM villages WHERE id = $1", villageID).Scan(&elixirLastCollected)
-		elapsedMinutes := int(time.Now().Sub(elixirLastCollected).Minutes())
+		elapsedMinutes := int(time.Since(elixirLastCollected).Minutes())
 
 		var elixirGen *int
 		err = tx.QueryRow(ctx, "SELECT LEAST(total_elixir_cap, total_elixir_rate * $2) FROM village_production_stats WHERE village_id = $1", villageID, elapsedMinutes).Scan(&elixirGen)
