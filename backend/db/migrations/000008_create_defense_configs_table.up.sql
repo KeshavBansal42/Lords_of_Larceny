@@ -9,5 +9,6 @@ CREATE TABLE defense_configs (
     single_target BOOLEAN NOT NULL DEFAULT TRUE,
     splash_radius FLOAT NOT NULL DEFAULT 0,
     target_type VARCHAR(20) NOT NULL,
+    build_time_seconds INT NOT NULL DEFAULT 60,
     PRIMARY KEY (name, level)
 );

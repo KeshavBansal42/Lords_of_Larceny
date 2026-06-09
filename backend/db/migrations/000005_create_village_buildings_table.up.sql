@@ -5,6 +5,8 @@ CREATE TABLE village_buildings (
     level INT NOT NULL DEFAULT 1,
     x INT NOT NULL,
     y INT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    upgrade_complete_at TIMESTAMPTZ,
     UNIQUE (village_id, x, y)
 );
 

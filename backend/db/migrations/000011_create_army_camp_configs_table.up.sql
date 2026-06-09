@@ -5,5 +5,6 @@ CREATE TABLE army_camp_configs (
     build_cost INT NOT NULL,
     min_thlevel INT NOT NULL,
     total_housing_space INT NOT NULL,
+    build_time_seconds INT NOT NULL DEFAULT 60,
     PRIMARY KEY (name, level)
 );

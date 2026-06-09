@@ -6,5 +6,6 @@ CREATE TABLE resource_storage_configs (
     min_thlevel INT NOT NULL,
     resource_type VARCHAR(20) NOT NULL,
     storage_capacity INT NOT NULL,
+    build_time_seconds INT NOT NULL DEFAULT 60,
     PRIMARY KEY (name, level)
 );

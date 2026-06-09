@@ -19,6 +19,12 @@ func GetVillage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = repository.SyncBuildings(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	_, thlevel, gold, elixir, err := repository.GetVillageByUserID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -42,6 +48,12 @@ func CollectGold(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := getUserID(w, r)
 	if err != nil {
+		return
+	}
+
+	err = repository.SyncBuildings(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -70,6 +82,12 @@ func CollectElixir(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = repository.SyncBuildings(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	elixir, err := repository.CollectElixir(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,6 +105,12 @@ func CollectElixir(w http.ResponseWriter, r *http.Request) {
 func ScoutVillage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	targetUserID := vars["id"]
+
+	err := repository.SyncBuildings(targetUserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	username, thLevel, gold, elixir, buildings, err := repository.ScoutVillage(targetUserID)
 	if err != nil {

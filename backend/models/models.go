@@ -48,8 +48,8 @@ type TroopConfig struct {
 }
 
 type VillageBuilding struct {
-	ID           string `json:"id"`
-	VillageID    int    `json:"village_id"`
+	ID           int    `json:"id"`
+	VillageID    string `json:"village_id"`
 	BuildingName string `json:"building_name"`
 	Level        int    `json:"level"`
 	X            int    `json:"x"`
@@ -75,6 +75,7 @@ type LiveBuilding struct {
 	Range        int
 	SplashRadius float64
 	TargetType   string
+	Status       string
 }
 
 type LiveTroop struct {

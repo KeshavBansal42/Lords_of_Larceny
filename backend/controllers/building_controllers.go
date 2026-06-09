@@ -18,6 +18,12 @@ func GetAllVillageBuildings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = repository.SyncBuildings(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	villageID, _, _, _, err := repository.GetVillageByUserID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

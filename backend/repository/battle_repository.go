@@ -89,7 +89,18 @@ func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liv
 
 	for i, building := range buildings {
 		key := fmt.Sprintf("building_%v", (i + 1))
-		config := buildingConfigs[building.BuildingName][building.Level]
+
+		configLevel := building.Level
+		if configLevel == 0 {
+			configLevel = 1
+		}
+
+		config := buildingConfigs[building.BuildingName][configLevel]
+
+		activeDamage := config.Damage
+		if building.Status != "active" {
+			activeDamage = 0
+		}
 
 		(*liveBuildings)[key] = &models.LiveBuilding{
 			ID:           key,
@@ -98,12 +109,13 @@ func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liv
 			Y:            building.Y,
 			MaxHP:        config.HitPoints,
 			CurrentHP:    config.HitPoints,
-			Damage:       config.Damage,
+			Damage:       activeDamage,
 			TargetID:     "",
 			Range:        config.Range,
 			SingleTarget: config.SingleTarget,
 			SplashRadius: config.SplashRadius,
 			TargetType:   config.TargetType,
+			Status:       building.Status,
 		}
 	}
 	for i, troop := range drops {
@@ -389,7 +401,7 @@ func GetBattleHistory(userID string) ([]dtos.BattleRecordDTO, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, attacker_id, defender_id, winner_id, damage_percent, occurred_at
+		SELECT id, attacker_id, defender_id, winner_id, damage_percent, occured_at
 		FROM battles
 		WHERE attacker_id = $1 OR defender_id = $1
 		ORDER BY occurred_at DESC

@@ -7,5 +7,6 @@ CREATE TABLE resource_gen_configs (
     production_per_min INT NOT NULL,
     capacity INT NOT NULL,
     resource_type VARCHAR(20) NOT NULL,
+    build_time_seconds INT NOT NULL DEFAULT 60,
     PRIMARY KEY (name, level)
 );
