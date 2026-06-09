@@ -384,3 +384,32 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 
 	return damagePercent, lootedGold, lootedElixir, battleLog, nil
 }
+
+func GetBattleHistory(userID string) ([]dtos.BattleRecordDTO, error) {
+	ctx := context.Background()
+
+	query := `
+		SELECT id, attacker_id, defender_id, winner_id, damage_percent, occurred_at
+		FROM battles
+		WHERE attacker_id = $1 OR defender_id = $1
+		ORDER BY occurred_at DESC
+		LIMIT 20
+	`
+	rows, err := db.Conn.Query(ctx, query, userID)
+
+	if err != nil {
+		return nil, errors.New("Error fetching battle history")
+	}
+	defer rows.Close()
+
+	battles, err := pgx.CollectRows(rows, pgx.RowToStructByName[dtos.BattleRecordDTO])
+	if err != nil {
+		return nil, errors.New("Error parsing battle history")
+	}
+
+	if battles == nil {
+		battles = []dtos.BattleRecordDTO{}
+	}
+
+	return battles, nil
+}

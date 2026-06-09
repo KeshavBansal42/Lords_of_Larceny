@@ -64,3 +64,27 @@ func Battle(w http.ResponseWriter, r *http.Request) {
 
 	respond(w, http.StatusOK, res)
 }
+
+func GetBattleHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := getUserID(w, r)
+	if err != nil {
+		return
+	}
+
+	battles, err := repository.GetBattleHistory(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := dtos.GetBattleHistoryResponseDTO{
+		Battles: battles,
+	}
+
+	respond(w, http.StatusOK, res)
+}

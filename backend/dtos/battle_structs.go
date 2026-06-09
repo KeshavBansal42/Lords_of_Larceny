@@ -1,5 +1,7 @@
 package dtos
 
+import "time"
+
 type MatchmakeResponseFromDBDTO struct {
 	UserID string `db:"user_id"`
 }
@@ -34,4 +36,17 @@ type BattleResultDTO struct {
 	GoldStolen          int              `json:"gold_stolen"`
 	ElixirStolen        int              `json:"elixir_stolen"`
 	Log                 []BattleEventDTO `json:"log"`
+}
+
+type BattleRecordDTO struct {
+	ID            int       `json:"id"`
+	AttackerID    string    `json:"attacker_id"`
+	DefenderID    string    `json:"defender_id"`
+	WinnerID      string    `json:"winner_id"`
+	DamagePercent int       `json:"damage_percent"`
+	OccurredAt    time.Time `json:"occurred_at"`
+}
+
+type GetBattleHistoryResponseDTO struct {
+	Battles []BattleRecordDTO `json:"battles"`
 }

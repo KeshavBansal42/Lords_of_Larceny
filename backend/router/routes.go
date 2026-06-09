@@ -35,6 +35,7 @@ func InitRoutes() *mux.Router {
 
 	battleRouter.HandleFunc("/matchmake", controllers.Matchmake).Methods("GET")
 	battleRouter.HandleFunc("/attack", controllers.Battle).Methods("POST")
+	battleRouter.HandleFunc("/history", controllers.GetBattleHistory).Methods("GET")
 
 	return router
 }
