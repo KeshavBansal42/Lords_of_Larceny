@@ -18,12 +18,12 @@ func SeedDatabase(conn *pgx.Conn) {
 
 	if count == 0 {
 		troopQuery := `
-			INSERT INTO troop_configs (name, level, hit_points, damage, min_thlevel, housing_space, range, speed) VALUES 
-			('Barbarian', 1, 45, 9, 1, 1, 1, 2),
-			('Archer', 1, 22, 8, 1, 1, 4, 2),
-			('Goblin', 1, 25, 11, 2, 1, 1, 3),
-			('Giant', 1, 400, 12, 3, 4, 1, 1),
-			('Wall Breaker', 1, 20, 10, 4, 2, 1, 2);
+			INSERT INTO troop_configs (name, level, hit_points, min_thlevel, housing_space, damage, range, speed, airborne) VALUES 
+			('Barbarian', 1, 45, 1, 1, 9, 1, 2, FALSE),
+			('Archer', 1, 22, 1, 1, 8, 4, 2, FALSE),
+			('Goblin', 1, 25, 2, 1, 11, 1, 3, FALSE),
+			('Giant', 1, 400, 3, 4, 12, 1, 1, FALSE),
+			('Wall Breaker', 1, 20, 4, 2, 10, 1, 2, FALSE);
 		`
 		_, err = conn.Exec(ctx, troopQuery)
 		if err != nil {
@@ -37,53 +37,140 @@ func SeedDatabase(conn *pgx.Conn) {
 	}
 
 	if count == 0 {
+		// 1. Seed base building configurations
 		buildingQuery := `
-			INSERT INTO building_configs (name, level, hit_points, damage, build_cost, build_resource_type, production_per_min, capacity, size, min_thlevel, range) VALUES 
-			-- Town Hall
-			('Town Hall', 1, 400, 0, 0, 'gold', 0, 1000, 4, 1, 0),
-			('Town Hall', 2, 800, 0, 1000, 'gold', 0, 2500, 4, 1, 0),
-			('Town Hall', 3, 1600, 0, 4000, 'gold', 0, 10000, 4, 1, 0),
-			('Town Hall', 4, 2000, 0, 25000, 'gold', 0, 50000, 4, 1, 0),
-
-			-- Cannon
-			('Cannon', 1, 300, 7, 250, 'gold', 0, 0, 2, 1, 4),
-			('Cannon', 2, 340, 11, 1000, 'gold', 0, 0, 2, 2, 4),
-			('Cannon', 3, 400, 15, 4000, 'gold', 0, 0, 2, 3, 4),
-			('Cannon', 4, 450, 19, 16000, 'gold', 0, 0, 2, 4, 4),
-
-			-- Archer Tower
-			('Archer Tower', 1, 380, 11, 1000, 'gold', 0, 0, 2, 1, 4),
-			('Archer Tower', 2, 420, 15, 2000, 'gold', 0, 0, 2, 2, 4),
-			('Archer Tower', 3, 460, 19, 5000, 'gold', 0, 0, 2, 3, 4),
-			('Archer Tower', 4, 500, 25, 20000, 'gold', 0, 0, 2, 4, 4),
-
-			-- Mortar
-			('Mortar', 1, 400, 4, 8000, 'gold', 0, 0, 2, 3, 6),
-			('Mortar', 2, 450, 5, 32000, 'gold', 0, 0, 2, 3, 6),
-			('Mortar', 3, 500, 6, 120000, 'gold', 0, 0, 2, 4, 6),
-			('Mortar', 4, 550, 7, 180000, 'gold', 0, 0, 2, 4, 6),
-
-			-- Gold Mine
-			('Gold Mine', 1, 75, 0, 150, 'elixir', 3, 1000, 2, 1, 0),
-			('Gold Mine', 2, 150, 0, 300, 'elixir', 6, 2000, 2, 2, 0),
-			('Gold Mine', 3, 300, 0, 700, 'elixir', 10, 3000, 2, 3, 0),
-			('Gold Mine', 4, 400, 0, 1400, 'elixir', 13, 5000, 2, 4, 0),
-
-			-- Elixir Collector
-			('Elixir Collector', 1, 75, 0, 150, 'gold', 3, 1000, 2, 1, 0),
-			('Elixir Collector', 2, 150, 0, 300, 'gold', 6, 2000, 2, 2, 0),
-			('Elixir Collector', 3, 300, 0, 700, 'gold', 10, 3000, 2, 3, 0),
-			('Elixir Collector', 4, 400, 0, 1400, 'gold', 13, 5000, 2, 4, 0),
-
-			--Army Camp
-			('Army Camp', 1, 100, 0, 200, 'elixir', 0, 20, 3, 1, 0),
-			('Army Camp', 2, 150, 0, 2000, 'elixir', 0, 30, 3, 2, 0),
-			('Army Camp', 3, 200, 0, 10000, 'elixir', 0, 35, 3, 3, 0),
-			('Army Camp', 4, 250, 0, 100000, 'elixir', 0, 40, 3, 4, 0);
+			INSERT INTO building_configs (name, build_resource_type, size) VALUES 
+			('Town Hall', 'gold', 4),
+			('Cannon', 'gold', 2),
+			('Archer Tower', 'gold', 2),
+			('Mortar', 'gold', 2),
+			('Gold Mine', 'elixir', 2),
+			('Elixir Collector', 'gold', 2),
+			('Army Camp', 'elixir', 3);
 		`
 		_, err = conn.Exec(ctx, buildingQuery)
 		if err != nil {
-			log.Println("Failed to seed buildings: ", err)
+			log.Println("Failed to seed base building configs: ", err)
+		}
+
+		// 2. Seed Defense Configurations
+		defenseQuery := `
+			INSERT INTO defense_configs (name, level, hit_points, build_cost, min_thlevel, damage, range, single_target, splash_radius) VALUES 
+			('Cannon', 1, 300, 250, 1, 7, 4, TRUE, 0),
+			('Cannon', 2, 340, 1000, 2, 11, 4, TRUE, 0),
+			('Cannon', 3, 400, 4000, 3, 15, 4, TRUE, 0),
+			('Cannon', 4, 450, 16000, 4, 19, 4, TRUE, 0),
+			('Archer Tower', 1, 380, 1000, 1, 11, 4, TRUE, 0),
+			('Archer Tower', 2, 420, 2000, 2, 15, 4, TRUE, 0),
+			('Archer Tower', 3, 460, 5000, 3, 19, 4, TRUE, 0),
+			('Archer Tower', 4, 500, 20000, 4, 25, 4, TRUE, 0),
+			('Mortar', 1, 400, 8000, 3, 4, 6, FALSE, 2.5),
+			('Mortar', 2, 450, 32000, 3, 5, 6, FALSE, 2.5),
+			('Mortar', 3, 500, 120000, 4, 6, 6, FALSE, 2.5),
+			('Mortar', 4, 550, 180000, 4, 7, 6, FALSE, 2.5);
+		`
+		_, err = conn.Exec(ctx, defenseQuery)
+		if err != nil {
+			log.Println("Failed to seed defense configs: ", err)
+		}
+
+		// 3. Seed Resource Generators
+		resGenQuery := `
+			INSERT INTO resource_gen_configs (name, level, hit_points, build_cost, min_thlevel, production_per_min, capacity, resource_type) VALUES 
+			('Gold Mine', 1, 75, 150, 1, 3, 1000, 'gold'),
+			('Gold Mine', 2, 150, 300, 2, 6, 2000, 'gold'),
+			('Gold Mine', 3, 300, 700, 3, 10, 3000, 'gold'),
+			('Gold Mine', 4, 400, 1400, 4, 13, 5000, 'gold'),
+			('Elixir Collector', 1, 75, 150, 1, 3, 1000, 'elixir'),
+			('Elixir Collector', 2, 150, 300, 2, 6, 2000, 'elixir'),
+			('Elixir Collector', 3, 300, 700, 3, 10, 3000, 'elixir'),
+			('Elixir Collector', 4, 400, 1400, 4, 13, 5000, 'elixir');
+		`
+		_, err = conn.Exec(ctx, resGenQuery)
+		if err != nil {
+			log.Println("Failed to seed resource generators: ", err)
+		}
+
+		// 4. Seed Resource Storages
+		storageQuery := `
+			INSERT INTO resource_storage_configs (name, level, hit_points, build_cost, min_thlevel, resource_type, storage_capacity) VALUES 
+			('Town Hall', 1, 400, 0, 1, 'both', 1000),
+			('Town Hall', 2, 800, 1000, 1, 'both', 2500),
+			('Town Hall', 3, 1600, 4000, 1, 'both', 10000),
+			('Town Hall', 4, 2000, 25000, 1, 'both', 50000);
+		`
+		_, err = conn.Exec(ctx, storageQuery)
+		if err != nil {
+			log.Println("Failed to seed resource storages: ", err)
+		}
+
+		// 5. Seed Army Camps
+		armyCampQuery := `
+			INSERT INTO army_camp_configs (name, level, hit_points, build_cost, min_thlevel, total_housing_space) VALUES 
+			('Army Camp', 1, 100, 200, 1, 20),
+			('Army Camp', 2, 150, 2000, 2, 30),
+			('Army Camp', 3, 200, 10000, 3, 35),
+			('Army Camp', 4, 250, 100000, 4, 40);
+		`
+		_, err = conn.Exec(ctx, armyCampQuery)
+		if err != nil {
+			log.Println("Failed to seed army camps: ", err)
+		}
+	}
+
+	// 6. Seed Fake Users for Matchmaking
+	var botCount int
+	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE username LIKE 'bot_%'").Scan(&botCount)
+	if err != nil {
+		log.Println("Failed to count bot users: ", err)
+	}
+
+	if botCount == 0 {
+		fakeUsersQuery := `
+		DO $$
+		DECLARE
+			bot1_id uuid := gen_random_uuid();
+			bot2_id uuid := gen_random_uuid();
+			bot3_id uuid := gen_random_uuid();
+			village1_id uuid := gen_random_uuid();
+			village2_id uuid := gen_random_uuid();
+			village3_id uuid := gen_random_uuid();
+		BEGIN
+			INSERT INTO users (id, username, password_hash) VALUES 
+			(bot1_id, 'bot_goblin_king', 'dummy_hash'),
+			(bot2_id, 'bot_archer_queen', 'dummy_hash'),
+			(bot3_id, 'bot_barbarian_boss', 'dummy_hash');
+
+			INSERT INTO villages (id, user_id, town_hall_level, gold, elixir) VALUES
+			(village1_id, bot1_id, 1, 1500, 1500),
+			(village2_id, bot2_id, 2, 3000, 3000),
+			(village3_id, bot3_id, 3, 8000, 8000);
+
+			-- Bot 1: Basic setup
+			INSERT INTO village_buildings (village_id, building_name, level, x, y) VALUES
+			(village1_id, 'Town Hall', 1, 16, 16),
+			(village1_id, 'Cannon', 1, 10, 10),
+			(village1_id, 'Gold Mine', 1, 10, 14);
+
+			-- Bot 2: Moderate setup
+			INSERT INTO village_buildings (village_id, building_name, level, x, y) VALUES
+			(village2_id, 'Town Hall', 2, 16, 16),
+			(village2_id, 'Cannon', 2, 12, 12),
+			(village2_id, 'Archer Tower', 1, 20, 12),
+			(village2_id, 'Gold Mine', 2, 10, 20);
+
+			-- Bot 3: Advanced setup
+			INSERT INTO village_buildings (village_id, building_name, level, x, y) VALUES
+			(village3_id, 'Town Hall', 3, 16, 16),
+			(village3_id, 'Cannon', 3, 12, 12),
+			(village3_id, 'Archer Tower', 2, 20, 12),
+			(village3_id, 'Mortar', 1, 16, 12),
+			(village3_id, 'Elixir Collector', 3, 20, 20);
+		END $$;
+		`
+		_, err = conn.Exec(ctx, fakeUsersQuery)
+		if err != nil {
+			log.Println("Failed to seed fake users: ", err)
 		}
 	}
 }

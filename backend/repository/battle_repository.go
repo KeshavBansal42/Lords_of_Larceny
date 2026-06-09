@@ -14,10 +14,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func Matchmake(userID int) (int, error) {
+func Matchmake(userID string) (string, error) {
 	ctx := context.Background()
 
-	var villageID int
+	var villageID string
 	var townHallLevel int
 	var troopCount int
 	query := `
@@ -30,27 +30,35 @@ func Matchmake(userID int) (int, error) {
 	err := db.Conn.QueryRow(ctx, query, userID).Scan(&villageID, &townHallLevel, &troopCount)
 
 	if err != nil {
-		return 0, errors.New("Error finding user info.")
+		return "", errors.New("Error finding user info.")
 	}
 
 	if troopCount == 0 {
-		return 0, errors.New("You need an army to attack")
+		return "", errors.New("You need an army to attack")
 	}
 
-	rows, err := db.Conn.Query(ctx, "SELECT user_id FROM villages WHERE id != $1 AND town_hall_level BETWEEN $2 AND $3 AND last_attacked_at < NOW() - INTERVAL '6 hours' LIMIT 50", villageID, (townHallLevel - 1), (townHallLevel + 1))
+	matchQuery := `
+        SELECT user_id 
+        FROM villages 
+        WHERE id != $1 
+          AND town_hall_level BETWEEN $2 AND $3 
+          AND (last_attacked_at IS NULL OR last_attacked_at < NOW() - INTERVAL '6 hours')
+        LIMIT 50
+    `
+	rows, err := db.Conn.Query(ctx, matchQuery, villageID, (townHallLevel - 1), (townHallLevel + 1))
 
 	if err != nil {
-		return 0, errors.New("Error fetching users")
+		return "", errors.New("Error fetching users")
 	}
 	defer rows.Close()
 
 	villages, err := pgx.CollectRows(rows, pgx.RowToStructByName[dtos.MatchmakeResponseFromDBDTO])
 	if err != nil {
-		return 0, errors.New("Failed to parse villages")
+		return "", errors.New("Failed to parse villages")
 	}
 
 	if len(villages) == 0 {
-		return 0, errors.New("No worthy opponents exist.")
+		return "", errors.New("No worthy opponents exist.")
 	}
 
 	randomIndex := rand.Intn(len(villages))
@@ -59,19 +67,21 @@ func Matchmake(userID int) (int, error) {
 	return selectedOpponent.UserID, nil
 }
 
-func Populate(userID int, liveBuildings *map[string]*models.LiveBuilding, liveTroops *map[string]*models.LiveTroop, buildings []dtos.BuildingResponseFromDBDTO, drops []dtos.TroopDropDTO) error {
+func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liveTroops *map[string]*models.LiveTroop, buildings []dtos.BuildingResponseFromDBDTO, drops []dtos.TroopDropDTO) error {
 	buildingConfigsArray, troopConfigsArray, err := GetGameConfigs()
 	if err != nil {
 		return errors.New("Error fetching config files")
 	}
 
-	buildingConfigs := make(map[int]models.BuildingConfig)
-	troopConfigs := make(map[int]models.TroopConfig)
-
+	buildingConfigs := make(map[string]map[int]models.BuildingConfig)
 	for _, bconfig := range buildingConfigsArray {
-		key := bconfig.ID
-		buildingConfigs[key] = bconfig
+		if buildingConfigs[bconfig.Name] == nil {
+			buildingConfigs[bconfig.Name] = make(map[int]models.BuildingConfig)
+		}
+		buildingConfigs[bconfig.Name][bconfig.Level] = bconfig
 	}
+
+	troopConfigs := make(map[int]models.TroopConfig)
 	for _, tconfig := range troopConfigsArray {
 		key := tconfig.ID
 		troopConfigs[key] = tconfig
@@ -79,16 +89,20 @@ func Populate(userID int, liveBuildings *map[string]*models.LiveBuilding, liveTr
 
 	for i, building := range buildings {
 		key := fmt.Sprintf("building_%v", (i + 1))
+		config := buildingConfigs[building.BuildingName][building.Level]
+
 		(*liveBuildings)[key] = &models.LiveBuilding{
-			ID:         key,
-			BuildingID: building.BuildingId,
-			X:          building.X,
-			Y:          building.Y,
-			MaxHP:      buildingConfigs[building.BuildingId].HitPoints,
-			CurrentHP:  buildingConfigs[building.BuildingId].HitPoints,
-			Damage:     buildingConfigs[building.BuildingId].Damage,
-			TargetID:   "",
-			Range:      buildingConfigs[building.BuildingId].Range,
+			ID:           key,
+			BuildingName: building.BuildingName,
+			X:            building.X,
+			Y:            building.Y,
+			MaxHP:        config.HitPoints,
+			CurrentHP:    config.HitPoints,
+			Damage:       config.Damage,
+			TargetID:     "",
+			Range:        config.Range,
+			SingleTarget: config.SingleTarget,
+			SplashRadius: config.SplashRadius,
 		}
 	}
 	for i, troop := range drops {
@@ -110,7 +124,7 @@ func Populate(userID int, liveBuildings *map[string]*models.LiveBuilding, liveTr
 	return nil
 }
 
-func Battle(userID int, targetUserID int, drops []dtos.TroopDropDTO) (int, int, int, []dtos.BattleEventDTO, error) {
+func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int, int, int, []dtos.BattleEventDTO, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -269,9 +283,7 @@ func Battle(userID int, targetUserID int, drops []dtos.TroopDropDTO) (int, int, 
 				continue
 			}
 			distanceFromTarget := math.Sqrt((targetTroop.X-float64(building.X))*(targetTroop.X-float64(building.X)) + (targetTroop.Y-float64(building.Y))*(targetTroop.Y-float64(building.Y)))
-			if distanceFromTarget < float64(building.Range) {
-				liveTroops[targetTroop.ID].CurrentHP -= building.Damage
-
+			if distanceFromTarget <= float64(building.Range) {
 				event := dtos.BattleEventDTO{
 					Tick:     tick,
 					Action:   "attack",
@@ -280,24 +292,50 @@ func Battle(userID int, targetUserID int, drops []dtos.TroopDropDTO) (int, int, 
 				}
 				battleLog = append(battleLog, event)
 
-				if liveTroops[targetTroop.ID].CurrentHP <= 0 {
-					event := dtos.BattleEventDTO{
-						Tick:     tick,
-						Action:   "delete",
-						EntityID: building.TargetID,
+				if building.SingleTarget {
+					liveTroops[targetTroop.ID].CurrentHP -= building.Damage
+					if liveTroops[targetTroop.ID].CurrentHP <= 0 {
+						deleteEvent := dtos.BattleEventDTO{
+							Tick:     tick,
+							Action:   "delete",
+							EntityID: targetTroop.ID,
+						}
+						battleLog = append(battleLog, deleteEvent)
+						delete(liveTroops, targetTroop.ID)
 					}
-					battleLog = append(battleLog, event)
-					delete(liveTroops, building.TargetID)
+				} else {
+					splashRadius := building.SplashRadius
+					impactX := targetTroop.X
+					impactY := targetTroop.Y
+
+					for troopID, troop := range liveTroops {
+						distFromImpact := math.Sqrt((troop.X-impactX)*(troop.X-impactX) + (troop.Y-impactY)*(troop.Y-impactY))
+
+						if distFromImpact <= splashRadius {
+							liveTroops[troopID].CurrentHP -= building.Damage
+
+							if liveTroops[troopID].CurrentHP <= 0 {
+								deleteEvent := dtos.BattleEventDTO{
+									Tick:     tick,
+									Action:   "delete",
+									EntityID: troopID,
+								}
+								battleLog = append(battleLog, deleteEvent)
+								delete(liveTroops, troopID)
+							}
+						}
+					}
 				}
 			}
 		}
 	}
+
 	leftBuildings := len(liveBuildings)
 	damagePercent := ((totalBuildings - leftBuildings) * 100) / totalBuildings
 	lootedGold := (damagePercent * gold) / 100
 	lootedElixir := (damagePercent * elixir) / 100
 
-	var winnerID int
+	var winnerID string
 	if damagePercent > 50 {
 		winnerID = userID
 	} else {
@@ -325,7 +363,8 @@ func Battle(userID int, targetUserID int, drops []dtos.TroopDropDTO) (int, int, 
 	if err != nil {
 		return 0, 0, 0, nil, errors.New("Failed to format battle log")
 	}
-	_, err = tx.Exec(ctx, "INSERT INTO battles (attacker_id, defender_id, winner_id, battle_log) VALUES ($1, $2, $3, $4)", userID, targetUserID, winnerID, logJSON)
+
+	_, err = tx.Exec(ctx, "INSERT INTO battles (attacker_id, defender_id, winner_id, damage_percent, battle_log) VALUES ($1, $2, $3, $4, $5)", userID, targetUserID, winnerID, damagePercent, logJSON)
 	if err != nil {
 		return 0, 0, 0, nil, errors.New("Failed to update battle log in database")
 	}

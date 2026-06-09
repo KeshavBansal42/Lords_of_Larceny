@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/repository"
@@ -35,7 +34,7 @@ func GetVillage(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, res)
 }
 
-func CollectResources(w http.ResponseWriter, r *http.Request) {
+func CollectGold(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 		return
@@ -46,15 +45,39 @@ func CollectResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gold, elixir, err := repository.CollectResources(userID)
+	gold, err := repository.CollectGold(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := dtos.CollectResponseDTO{
-		Message: "Resources succesfully collected",
+	res := dtos.CollectGoldResponseDTO{
+		Message: "Gold succesfully collected",
 		Gold:    gold,
+	}
+
+	respond(w, http.StatusOK, res)
+}
+
+func CollectElixir(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := getUserID(w, r)
+	if err != nil {
+		return
+	}
+
+	elixir, err := repository.CollectElixir(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := dtos.CollectElixirResponseDTO{
+		Message: "Elixir succesfully collected",
 		Elixir:  elixir,
 	}
 
@@ -63,12 +86,7 @@ func CollectResources(w http.ResponseWriter, r *http.Request) {
 
 func ScoutVillage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	targetIDStr := vars["id"]
-	targetUserID, err := strconv.Atoi(targetIDStr)
-	if err != nil {
-		http.Error(w, "Invalid target user ID.", http.StatusBadRequest)
-		return
-	}
+	targetUserID := vars["id"]
 
 	username, thLevel, gold, elixir, buildings, err := repository.ScoutVillage(targetUserID)
 	if err != nil {

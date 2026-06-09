@@ -6,9 +6,13 @@ type VillageResponseDTO struct {
 	Elixir        int `json:"elixir"`
 }
 
-type CollectResponseDTO struct {
+type CollectGoldResponseDTO struct {
 	Message string `json:"message"`
 	Gold    int    `json:"gold"`
+}
+
+type CollectElixirResponseDTO struct {
+	Message string `json:"message"`
 	Elixir  int    `json:"elixir"`
 }
 

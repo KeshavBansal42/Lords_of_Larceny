@@ -10,103 +10,99 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func CreateUserAndVillage(username, password_hash string) (int, error) {
+func CreateUserAndVillage(username, password_hash string) (string, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer tx.Rollback(ctx)
 
-	var userID int
+	var userID string
 	err = tx.QueryRow(ctx, "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id", username, password_hash).Scan(&userID)
 
 	if err != nil {
-		return 0, errors.New("username already exists")
+		return "", errors.New("username already exists")
 	}
 
-	var villageID int
+	var villageID string
 	err = tx.QueryRow(ctx, "INSERT INTO villages (user_id, town_hall_level, gold, elixir) VALUES ($1, 1, 1000, 1000) RETURNING id", userID).Scan(&villageID)
 
 	if err != nil {
 
-		return 0, errors.New("failed to initialise village")
+		return "", errors.New("failed to initialise village")
 	}
 
-	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_id, x, y) VALUES ($1, 1, 16, 16)", villageID)
+	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_name, level, x, y) VALUES ($1, 'Town Hall', 1, 16, 16)", villageID)
 
 	if err != nil {
 
-		return 0, errors.New("failed to add town hall")
+		return "", errors.New("failed to add town hall")
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return 0, err
+		return "", err
 	}
 
 	return userID, nil
 }
 
-func GetUserByUsername(username string) (int, string, error) {
-	var userID int
+func GetUserByUsername(username string) (string, string, error) {
+	var userID string
 	var passwordHash string
 	err := db.Conn.QueryRow(context.Background(), "SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
 
 	if err != nil {
-		return 0, "", errors.New("Error getting the userID and PasswordHash")
+		return "", "", errors.New("Error getting the userID and PasswordHash")
 	}
 
 	return userID, passwordHash, nil
 }
 
-func GetVillageByUserID(userID int) (int, int, int, int, error) {
+func GetVillageByUserID(userID string) (string, int, int, int, error) {
 	var townHallLevel int
 	var gold int
 	var elixir int
-	var villageID int
+	var villageID string
 	err := db.Conn.QueryRow(context.Background(), "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel, &gold, &elixir)
 
 	if err != nil {
-		return 0, 0, 0, 0, errors.New("Error fetching the village")
+		return "", 0, 0, 0, errors.New("Error fetching the village")
 	}
 
 	return villageID, townHallLevel, gold, elixir, nil
 }
 
-func CollectResources(userID int) (int, int, error) {
+func CollectGold(userID string) (int, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 	defer tx.Rollback(ctx)
 
-	var villageID int
-	var lastCollectedAt time.Time
+	var villageID string
+	var goldLastCollected time.Time
 
-	err = tx.QueryRow(ctx, "SELECT id, last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &lastCollectedAt)
-
+	err = tx.QueryRow(ctx, "SELECT id, gold_last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &goldLastCollected)
 	if err != nil {
-		return 0, 0, errors.New("Error fetching village details.")
+		return 0, errors.New("Error fetching village details.")
 	}
 
 	now := time.Now()
-	elapsedMinutes := int(now.Sub(lastCollectedAt).Minutes())
+	elapsedMinutes := int(now.Sub(goldLastCollected).Minutes())
 
 	var goldGen *int
-	var elixirGen *int
 	query := `
-        SELECT 
-            LEAST(total_gold_cap, total_gold_rate * $2) AS total_gold_generated,
-            LEAST(total_elixir_cap, total_elixir_rate * $2) AS total_elixir_generated
-        FROM village_production_stats
-        WHERE village_id = $1;
-    `
-	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&goldGen, &elixirGen)
+		SELECT LEAST(total_gold_cap, total_gold_rate * $2) AS total_gold_generated
+		FROM village_production_stats
+		WHERE village_id = $1;
+	`
+	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&goldGen)
 	if err != nil {
-		return 0, 0, errors.New("error calculating resources")
+		return 0, errors.New("error calculating resources")
 	}
 
 	goldToAdd := 0
@@ -114,30 +110,73 @@ func CollectResources(userID int) (int, int, error) {
 		goldToAdd = *goldGen
 	}
 
+	var newGold int
+	err = tx.QueryRow(ctx, "UPDATE villages SET gold = gold + $1, gold_last_collected_at = $2 WHERE id = $3 RETURNING gold", goldToAdd, now, villageID).Scan(&newGold)
+	if err != nil {
+		return 0, errors.New("error updating resources")
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+
+	return newGold, nil
+}
+
+func CollectElixir(userID string) (int, error) {
+	ctx := context.Background()
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	var villageID string
+	var elixirLastCollected time.Time
+
+	err = tx.QueryRow(ctx, "SELECT id, elixir_last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &elixirLastCollected)
+	if err != nil {
+		return 0, errors.New("Error fetching village details.")
+	}
+
+	now := time.Now()
+	elapsedMinutes := int(now.Sub(elixirLastCollected).Minutes())
+
+	var elixirGen *int
+	query := `
+		SELECT LEAST(total_elixir_cap, total_elixir_rate * $2) AS total_elixir_generated
+		FROM village_production_stats
+		WHERE village_id = $1;
+	`
+	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&elixirGen)
+	if err != nil {
+		return 0, errors.New("error calculating resources")
+	}
+
 	elixirToAdd := 0
 	if elixirGen != nil {
 		elixirToAdd = *elixirGen
 	}
 
-	var newGold int
 	var newElixir int
-	err = tx.QueryRow(ctx, "UPDATE villages SET gold = gold + $1, elixir = elixir + $2, last_collected_at = $3 WHERE id = $4 RETURNING gold, elixir", goldToAdd, elixirToAdd, now, villageID).Scan(&newGold, &newElixir)
+	err = tx.QueryRow(ctx, "UPDATE villages SET elixir = elixir + $1, elixir_last_collected_at = $2 WHERE id = $3 RETURNING elixir", elixirToAdd, now, villageID).Scan(&newElixir)
 	if err != nil {
-		return 0, 0, errors.New("error updating resources")
+		return 0, errors.New("error updating resources")
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 
-	return newGold, newElixir, nil
+	return newElixir, nil
 }
 
-func ScoutVillage(targetUserID int) (string, int, int, int, []dtos.BuildingResponseFromDBDTO, error) {
+func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingResponseFromDBDTO, error) {
 	ctx := context.Background()
 
 	var username string
-	var villageID int
+	var villageID string
 	var thLevel int
 	var gold int
 	var elixir int
@@ -153,7 +192,7 @@ func ScoutVillage(targetUserID int) (string, int, int, int, []dtos.BuildingRespo
 		return "", 0, 0, 0, nil, errors.New("Village not found")
 	}
 
-	buildingRows, err := db.Conn.Query(ctx, "SELECT building_id, x, y FROM village_buildings WHERE village_id = $1", villageID)
+	buildingRows, err := db.Conn.Query(ctx, "SELECT building_name, level, x, y FROM village_buildings WHERE village_id = $1", villageID)
 	if err != nil {
 		return "", 0, 0, 0, nil, errors.New("Error fetching enemy buildings")
 	}

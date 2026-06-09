@@ -7,7 +7,7 @@ type RegisterRequestDTO struct {
 
 type RegisterResponseDTO struct {
 	Message string `json:"message"`
-	ID      int    `json:"id"`
+	ID      string `json:"id"`
 }
 
 type LoginRequestDTO struct {

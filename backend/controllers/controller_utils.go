@@ -12,18 +12,18 @@ func respond(w http.ResponseWriter, status int, res any) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func getUserID(w http.ResponseWriter, r *http.Request) (int, error) {
+func getUserID(w http.ResponseWriter, r *http.Request) (string, error) {
 	value := r.Context().Value("userID")
-	userIDFloat, ok := value.(float64)
+	userIDStr, ok := value.(string)
 	if !ok {
 		http.Error(w, "Invalid user ID in token", http.StatusUnauthorized)
-		return 0, errors.New("unauthorized")
+		return "", errors.New("unauthorized")
 	}
-	return int(userIDFloat), nil
+	return userIDStr, nil
 }
 
 func parseRequest(w http.ResponseWriter, r *http.Request, req any) bool {
-	err := json.NewDecoder(r.Body).Decode(req) // Notice req doesn't have an & here
+	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
 		http.Error(w, "Invalid request body.", http.StatusBadRequest)
 		return false

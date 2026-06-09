@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func TrainTroops(userID int, troopsToTrain map[int]int) error {
+func TrainTroops(userID string, troopsToTrain map[int]int) error {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -18,7 +18,7 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 	}
 	defer tx.Rollback(ctx)
 
-	var villageID int
+	var villageID string
 	var thLevel int
 	err = tx.QueryRow(ctx, "SELECT id, town_hall_level FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &thLevel)
 	if err != nil {
@@ -27,10 +27,10 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 
 	var maxCapacity int
 	err = tx.QueryRow(ctx, `
-        SELECT COALESCE(SUM(bc.capacity), 0) 
+        SELECT COALESCE(SUM(ac.total_housing_space), 0) 
         FROM village_buildings vb 
-        JOIN building_configs bc ON vb.building_id = bc.id 
-        WHERE vb.village_id = $1 AND bc.name = 'Army Camp'
+        JOIN army_camp_configs ac ON vb.building_name = ac.name AND vb.level = ac.level
+        WHERE vb.village_id = $1 AND vb.building_name = 'Army Camp'
     `, villageID).Scan(&maxCapacity)
 	if err != nil {
 		return errors.New("Error calculating max army capacity")
@@ -84,7 +84,7 @@ func TrainTroops(userID int, troopsToTrain map[int]int) error {
 	return nil
 }
 
-func GetAllVillageTroops(villageID int) ([]dtos.TroopResponseFromDBDTO, error) {
+func GetAllVillageTroops(villageID string) ([]dtos.TroopResponseFromDBDTO, error) {
 	rows, err := db.Conn.Query(context.Background(), "SELECT troop_id, quantity FROM village_troops WHERE village_id = $1", villageID)
 
 	if err != nil {

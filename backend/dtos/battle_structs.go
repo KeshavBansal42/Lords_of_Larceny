@@ -1,12 +1,12 @@
 package dtos
 
 type MatchmakeResponseFromDBDTO struct {
-	UserID int `db:"user_id"`
+	UserID string `db:"user_id"`
 }
 
 type MatchmakeResponseDTO struct {
 	Message   string `json:"message"`
-	VillageID int    `json:"villageid"`
+	VillageID string `json:"villageid"`
 }
 
 type TroopDropDTO struct {
@@ -16,7 +16,7 @@ type TroopDropDTO struct {
 }
 
 type AttackRequestDTO struct {
-	TargetUserID int            `json:"target_user_id"`
+	TargetUserID string         `json:"target_user_id"`
 	Drops        []TroopDropDTO `json:"drops"`
 }
 

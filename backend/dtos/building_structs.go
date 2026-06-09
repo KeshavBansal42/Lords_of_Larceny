@@ -1,9 +1,9 @@
 package dtos
 
 type BuildRequestDTO struct {
-	BuildingID int `json:"building_id"`
-	X          int `json:"x"`
-	Y          int `json:"y"`
+	BuildingName string `json:"building_name"`
+	X            int    `json:"x"`
+	Y            int    `json:"y"`
 }
 
 type BuildResponseDTO struct {
@@ -17,9 +17,10 @@ type GetVillageBuildingsResponseDTO struct {
 }
 
 type BuildingResponseFromDBDTO struct {
-	BuildingId int `json:"building_id"`
-	X          int `json:"x"`
-	Y          int `json:"y"`
+	BuildingName string `json:"building_name"`
+	Level        int    `json:"level"`
+	X            int    `json:"x"`
+	Y            int    `json:"y"`
 }
 
 type UpgradeBuildingRequestDTO struct {

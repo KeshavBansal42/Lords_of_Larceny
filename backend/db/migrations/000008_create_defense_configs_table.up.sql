@@ -7,5 +7,6 @@ CREATE TABLE defense_configs (
     damage INT NOT NULL,
     range INT NOT NULL,
     single_target BOOLEAN NOT NULL DEFAULT TRUE,
+    splash_radius FLOAT NOT NULL DEFAULT 0,
     PRIMARY KEY (name, level)
 );

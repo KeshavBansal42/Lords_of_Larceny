@@ -54,7 +54,7 @@ func AddBuilding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gold, elixir, err := repository.AddBuilding(userID, req.BuildingID, req.X, req.Y)
+	gold, elixir, err := repository.AddBuilding(userID, req.BuildingName, req.X, req.Y)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -83,12 +83,6 @@ func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := getUserID(w, r)
 	if err != nil {
-		return
-	}
-
-	_, _, err = repository.CollectResources(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

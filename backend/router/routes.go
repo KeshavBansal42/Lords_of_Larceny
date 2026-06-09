@@ -27,7 +27,8 @@ func InitRoutes() *mux.Router {
 	villageRouter.HandleFunc("/troops", controllers.GetAllVillageTroops).Methods("GET")
 	villageRouter.HandleFunc("/troops/train", controllers.TrainTroops).Methods("PUT")
 
-	villageRouter.HandleFunc("/resources/collect", controllers.CollectResources).Methods("PUT")
+	villageRouter.HandleFunc("/collect/gold", controllers.CollectGold).Methods("PUT")
+	villageRouter.HandleFunc("/collect/elixir", controllers.CollectElixir).Methods("PUT")
 
 	battleRouter := router.PathPrefix("/battle").Subrouter()
 	battleRouter.Use(middleware.RequireAuth)
