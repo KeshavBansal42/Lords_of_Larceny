@@ -269,3 +269,24 @@ func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingRe
 
 	return username, thLevel, gold, elixir, buildings, nil
 }
+
+func DeleteAccount(userID string) error {
+	ctx := context.Background()
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
+	if err != nil {
+		return errors.New("Error deleting user account")
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}

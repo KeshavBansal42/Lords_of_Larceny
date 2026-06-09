@@ -12,6 +12,7 @@ func InitRoutes() *mux.Router {
 	router.HandleFunc("/register", controllers.Register).Methods("POST")
 	router.HandleFunc("/login", controllers.Login).Methods("POST")
 	router.HandleFunc("/game/configs", controllers.GetGameConfigs).Methods("GET")
+	router.HandleFunc("/user/delete", controllers.DeleteAccount).Methods("DELETE")
 
 	villageRouter := router.PathPrefix("/village").Subrouter()
 	villageRouter.Use(middleware.RequireAuth)

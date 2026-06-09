@@ -19,3 +19,7 @@ type LoginResponseDTO struct {
 	Message string `json:"message"`
 	Token   string `json:"token"`
 }
+
+type DeleteAccountResponseDTO struct {
+	Message string `json:"message"`
+}

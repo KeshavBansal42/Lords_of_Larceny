@@ -92,3 +92,27 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	respond(w, http.StatusOK, res)
 }
+
+func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := getUserID(w, r)
+	if err != nil {
+		return
+	}
+
+	err = repository.DeleteAccount(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := dtos.DeleteAccountResponseDTO{
+		Message: "Account deleted successfully",
+	}
+
+	respond(w, http.StatusOK, res)
+}
