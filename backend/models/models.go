@@ -31,6 +31,7 @@ type BuildingConfig struct {
 	Range             int     `json:"range"`
 	SingleTarget      bool    `json:"single_target"`
 	SplashRadius      float64 `json:"splash_radius"`
+	TargetType        string  `json:"target_type"`
 }
 
 type TroopConfig struct {
@@ -73,6 +74,7 @@ type LiveBuilding struct {
 	TargetID     string
 	Range        int
 	SplashRadius float64
+	TargetType   string
 }
 
 type LiveTroop struct {
@@ -86,4 +88,5 @@ type LiveTroop struct {
 	Range     int
 	Speed     int
 	TargetID  string
+	Airborne  bool
 }

@@ -103,6 +103,7 @@ func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liv
 			Range:        config.Range,
 			SingleTarget: config.SingleTarget,
 			SplashRadius: config.SplashRadius,
+			TargetType:   config.TargetType,
 		}
 	}
 	for i, troop := range drops {
@@ -117,6 +118,7 @@ func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liv
 			Damage:    troopConfigs[troop.TroopID].Damage,
 			Range:     troopConfigs[troop.TroopID].Range,
 			Speed:     troopConfigs[troop.TroopID].Speed,
+			Airborne:  troopConfigs[troop.TroopID].Airborne,
 			TargetID:  "",
 		}
 	}
@@ -268,6 +270,13 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 				continue
 			}
 			for _, troop := range liveTroops {
+				if building.TargetType == "ground" && troop.Airborne {
+					continue
+				}
+				if building.TargetType == "air" && !troop.Airborne {
+					continue
+				}
+
 				distance := math.Sqrt((troop.X-float64(building.X))*(troop.X-float64(building.X)) + (troop.Y-float64(building.Y))*(troop.Y-float64(building.Y)))
 				if distance < minDistance {
 					minDistance = distance

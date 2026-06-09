@@ -55,19 +55,19 @@ func SeedDatabase(conn *pgx.Conn) {
 
 		// 2. Seed Defense Configurations
 		defenseQuery := `
-			INSERT INTO defense_configs (name, level, hit_points, build_cost, min_thlevel, damage, range, single_target, splash_radius) VALUES 
-			('Cannon', 1, 300, 250, 1, 7, 4, TRUE, 0),
-			('Cannon', 2, 340, 1000, 2, 11, 4, TRUE, 0),
-			('Cannon', 3, 400, 4000, 3, 15, 4, TRUE, 0),
-			('Cannon', 4, 450, 16000, 4, 19, 4, TRUE, 0),
-			('Archer Tower', 1, 380, 1000, 1, 11, 4, TRUE, 0),
-			('Archer Tower', 2, 420, 2000, 2, 15, 4, TRUE, 0),
-			('Archer Tower', 3, 460, 5000, 3, 19, 4, TRUE, 0),
-			('Archer Tower', 4, 500, 20000, 4, 25, 4, TRUE, 0),
-			('Mortar', 1, 400, 8000, 3, 4, 6, FALSE, 2.5),
-			('Mortar', 2, 450, 32000, 3, 5, 6, FALSE, 2.5),
-			('Mortar', 3, 500, 120000, 4, 6, 6, FALSE, 2.5),
-			('Mortar', 4, 550, 180000, 4, 7, 6, FALSE, 2.5);
+			INSERT INTO defense_configs (name, level, hit_points, build_cost, min_thlevel, damage, range, single_target, splash_radius, target_type) VALUES 
+			('Cannon', 1, 300, 250, 1, 7, 4, TRUE, 0, 'ground'),
+			('Cannon', 2, 340, 1000, 2, 11, 4, TRUE, 0, 'ground'),
+			('Cannon', 3, 400, 4000, 3, 15, 4, TRUE, 0, 'ground'),
+			('Cannon', 4, 450, 16000, 4, 19, 4, TRUE, 0, 'ground'),
+			('Archer Tower', 1, 380, 1000, 1, 11, 4, TRUE, 0, 'both'),
+			('Archer Tower', 2, 420, 2000, 2, 15, 4, TRUE, 0, 'both'),
+			('Archer Tower', 3, 460, 5000, 3, 19, 4, TRUE, 0, 'both'),
+			('Archer Tower', 4, 500, 20000, 4, 25, 4, TRUE, 0, 'both'),
+			('Mortar', 1, 400, 8000, 3, 4, 6, FALSE, 2.5, 'ground'),
+			('Mortar', 2, 450, 32000, 3, 5, 6, FALSE, 2.5, 'ground'),
+			('Mortar', 3, 500, 120000, 4, 6, 6, FALSE, 2.5, 'ground'),
+			('Mortar', 4, 550, 180000, 4, 7, 6, FALSE, 2.5, 'ground');
 		`
 		_, err = conn.Exec(ctx, defenseQuery)
 		if err != nil {

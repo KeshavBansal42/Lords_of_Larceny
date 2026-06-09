@@ -26,7 +26,8 @@ func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
 			COALESCE(d.min_thlevel, rg.min_thlevel, rs.min_thlevel, ac.min_thlevel) AS min_thlevel, 
 			COALESCE(d.range, 0) AS range,
 			COALESCE(d.single_target, TRUE) AS single_target,
-			COALESCE(d.splash_radius, 0) AS splash_radius
+			COALESCE(d.splash_radius, 0) AS splash_radius,
+			COALESCE(d.target_type, 0) AS target_type
 		FROM building_configs b
 		LEFT JOIN defense_configs d ON b.name = d.name
 		LEFT JOIN resource_gen_configs rg ON b.name = rg.name
