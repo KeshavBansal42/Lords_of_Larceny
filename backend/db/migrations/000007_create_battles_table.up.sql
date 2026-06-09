@@ -4,5 +4,6 @@ CREATE TABLE battles (
     defender_id uuid NOT NULL REFERENCES users(id),
     winner_id uuid NOT NULL REFERENCES users(id),
     damage_percent INT NOT NULL,
+    occured_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     battle_log JSONB
 );
