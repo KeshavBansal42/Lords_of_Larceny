@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS resource_gen_configs;

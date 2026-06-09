@@ -1,5 +1,5 @@
 CREATE TABLE village_troops (
-    village_id INT NOT NULL REFERENCES villages(id) ON DELETE CASCADE,
+    village_id uuid NOT NULL REFERENCES villages(id) ON DELETE CASCADE,
     troop_id INT NOT NULL REFERENCES troop_configs(id),
     quantity INT NOT NULL DEFAULT 0,
     PRIMARY KEY (village_id, troop_id)

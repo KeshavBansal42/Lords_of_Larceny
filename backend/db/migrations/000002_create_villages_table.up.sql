@@ -1,10 +1,11 @@
 CREATE TABLE villages (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     town_hall_level INT NOT NULL DEFAULT 1,
     gold INT NOT NULL DEFAULT 1000,
     elixir INT NOT NULL DEFAULT 1000,
-    last_collected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    gold_last_collected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    elixir_last_collected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_attacked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
