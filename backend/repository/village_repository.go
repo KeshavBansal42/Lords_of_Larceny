@@ -84,34 +84,66 @@ func CollectGold(userID string) (int, error) {
 	defer tx.Rollback(ctx)
 
 	var villageID string
+	var currentGold int
 	var goldLastCollected time.Time
 
-	err = tx.QueryRow(ctx, "SELECT id, gold_last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &goldLastCollected)
+	err = tx.QueryRow(ctx, "SELECT id, gold, gold_last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &currentGold, &goldLastCollected)
 	if err != nil {
 		return 0, errors.New("Error fetching village details.")
 	}
 
-	now := time.Now()
-	elapsedMinutes := int(now.Sub(goldLastCollected).Minutes())
-
-	var goldGen *int
+	var goldRate, goldCap, maxStorage int
 	query := `
-		SELECT LEAST(total_gold_cap, total_gold_rate * $2) AS total_gold_generated
+		SELECT total_gold_rate, total_gold_cap, max_gold_storage
 		FROM village_production_stats
 		WHERE village_id = $1;
 	`
-	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&goldGen)
+	err = tx.QueryRow(ctx, query, villageID).Scan(&goldRate, &goldCap, &maxStorage)
 	if err != nil {
-		return 0, errors.New("error calculating resources")
+		if errors.Is(err, pgx.ErrNoRows) {
+			goldRate, goldCap, maxStorage = 0, 0, 0
+		} else {
+			return 0, errors.New("error calculating resources")
+		}
 	}
 
-	goldToAdd := 0
-	if goldGen != nil {
-		goldToAdd = *goldGen
+	if goldRate == 0 {
+		if err = tx.Commit(ctx); err != nil {
+			return 0, err
+		}
+		return currentGold, nil
+	}
+
+	now := time.Now()
+	elapsedMinutes := now.Sub(goldLastCollected).Minutes()
+
+	totalGenerated := int(float64(goldRate) * elapsedMinutes)
+	if totalGenerated > goldCap {
+		totalGenerated = goldCap
+	}
+
+	availableSpace := maxStorage - currentGold
+	if availableSpace < 0 {
+		availableSpace = 0
+	}
+
+	goldToAdd := totalGenerated
+	if goldToAdd > availableSpace {
+		goldToAdd = availableSpace
+	}
+
+	leftoverGold := totalGenerated - goldToAdd
+	var newLastCollected time.Time
+
+	if leftoverGold > 0 {
+		leftoverMinutes := float64(leftoverGold) / float64(goldRate)
+		newLastCollected = now.Add(-time.Duration(leftoverMinutes * float64(time.Minute)))
+	} else {
+		newLastCollected = now
 	}
 
 	var newGold int
-	err = tx.QueryRow(ctx, "UPDATE villages SET gold = gold + $1, gold_last_collected_at = $2 WHERE id = $3 RETURNING gold", goldToAdd, now, villageID).Scan(&newGold)
+	err = tx.QueryRow(ctx, "UPDATE villages SET gold = gold + $1, gold_last_collected_at = $2 WHERE id = $3 RETURNING gold", goldToAdd, newLastCollected, villageID).Scan(&newGold)
 	if err != nil {
 		return 0, errors.New("error updating resources")
 	}
@@ -133,34 +165,66 @@ func CollectElixir(userID string) (int, error) {
 	defer tx.Rollback(ctx)
 
 	var villageID string
+	var currentElixir int
 	var elixirLastCollected time.Time
 
-	err = tx.QueryRow(ctx, "SELECT id, elixir_last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &elixirLastCollected)
+	err = tx.QueryRow(ctx, "SELECT id, elixir, elixir_last_collected_at FROM villages WHERE user_id = $1 FOR UPDATE", userID).Scan(&villageID, &currentElixir, &elixirLastCollected)
 	if err != nil {
 		return 0, errors.New("Error fetching village details.")
 	}
 
-	now := time.Now()
-	elapsedMinutes := int(now.Sub(elixirLastCollected).Minutes())
-
-	var elixirGen *int
+	var elixirRate, elixirCap, maxStorage int
 	query := `
-		SELECT LEAST(total_elixir_cap, total_elixir_rate * $2) AS total_elixir_generated
+		SELECT total_elixir_rate, total_elixir_cap, max_elixir_storage
 		FROM village_production_stats
 		WHERE village_id = $1;
 	`
-	err = tx.QueryRow(ctx, query, villageID, elapsedMinutes).Scan(&elixirGen)
+	err = tx.QueryRow(ctx, query, villageID).Scan(&elixirRate, &elixirCap, &maxStorage)
 	if err != nil {
-		return 0, errors.New("error calculating resources")
+		if errors.Is(err, pgx.ErrNoRows) {
+			elixirRate, elixirCap, maxStorage = 0, 0, 0
+		} else {
+			return 0, errors.New("error calculating resources")
+		}
 	}
 
-	elixirToAdd := 0
-	if elixirGen != nil {
-		elixirToAdd = *elixirGen
+	if elixirRate == 0 {
+		if err = tx.Commit(ctx); err != nil {
+			return 0, err
+		}
+		return currentElixir, nil
+	}
+
+	now := time.Now()
+	elapsedMinutes := now.Sub(elixirLastCollected).Minutes()
+
+	totalGenerated := int(float64(elixirRate) * elapsedMinutes)
+	if totalGenerated > elixirCap {
+		totalGenerated = elixirCap
+	}
+
+	availableSpace := maxStorage - currentElixir
+	if availableSpace < 0 {
+		availableSpace = 0
+	}
+
+	elixirToAdd := totalGenerated
+	if elixirToAdd > availableSpace {
+		elixirToAdd = availableSpace
+	}
+
+	leftoverElixir := totalGenerated - elixirToAdd
+	var newLastCollected time.Time
+
+	if leftoverElixir > 0 {
+		leftoverMinutes := float64(leftoverElixir) / float64(elixirRate)
+		newLastCollected = now.Add(-time.Duration(leftoverMinutes * float64(time.Minute)))
+	} else {
+		newLastCollected = now
 	}
 
 	var newElixir int
-	err = tx.QueryRow(ctx, "UPDATE villages SET elixir = elixir + $1, elixir_last_collected_at = $2 WHERE id = $3 RETURNING elixir", elixirToAdd, now, villageID).Scan(&newElixir)
+	err = tx.QueryRow(ctx, "UPDATE villages SET elixir = elixir + $1, elixir_last_collected_at = $2 WHERE id = $3 RETURNING elixir", elixirToAdd, newLastCollected, villageID).Scan(&newElixir)
 	if err != nil {
 		return 0, errors.New("error updating resources")
 	}
