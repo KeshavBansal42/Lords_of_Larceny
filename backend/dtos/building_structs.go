@@ -19,12 +19,12 @@ type GetVillageBuildingsResponseDTO struct {
 }
 
 type BuildingResponseFromDBDTO struct {
-	BuildingName      string    `json:"building_name"`
-	Level             int       `json:"level"`
-	X                 int       `json:"x"`
-	Y                 int       `json:"y"`
-	Status            string    `json:"status"`
-	UpgradeCompleteAt time.Time `json:"upgrade_complete_at"`
+	BuildingName      string     `json:"building_name"`
+	Level             int        `json:"level"`
+	X                 int        `json:"x"`
+	Y                 int        `json:"y"`
+	Status            string     `json:"status"`
+	UpgradeCompleteAt *time.Time `json:"upgrade_complete_at"`
 }
 
 type UpgradeBuildingRequestDTO struct {

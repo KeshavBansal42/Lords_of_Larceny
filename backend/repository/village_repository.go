@@ -256,7 +256,7 @@ func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingRe
 		return "", 0, 0, 0, nil, errors.New("Village not found")
 	}
 
-	buildingRows, err := db.Pool.Query(ctx, "SELECT building_name, level, x, y, status FROM village_buildings WHERE village_id = $1", villageID)
+	buildingRows, err := db.Pool.Query(ctx, "SELECT building_name, level, x, y, status, upgrade_complete_at FROM village_buildings WHERE village_id = $1", villageID)
 	if err != nil {
 		return "", 0, 0, 0, nil, errors.New("Error fetching enemy buildings")
 	}

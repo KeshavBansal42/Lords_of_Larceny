@@ -401,7 +401,7 @@ func GetBattleHistory(userID string) ([]dtos.BattleRecordDTO, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, attacker_id, defender_id, winner_id, damage_percent, occured_at
+		SELECT id, attacker_id, defender_id, winner_id, damage_percent, occurred_at
 		FROM battles
 		WHERE attacker_id = $1 OR defender_id = $1
 		ORDER BY occurred_at DESC

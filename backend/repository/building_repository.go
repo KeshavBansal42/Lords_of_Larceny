@@ -11,7 +11,7 @@ import (
 )
 
 func GetAllVillageBuildings(villageID string) ([]dtos.BuildingResponseFromDBDTO, error) {
-	rows, err := db.Pool.Query(context.Background(), "SELECT building_name, level, x, y, status FROM village_buildings WHERE village_id = $1", villageID)
+	rows, err := db.Pool.Query(context.Background(), "SELECT building_name, level, x, y, status, upgrade_complete_at FROM village_buildings WHERE village_id = $1", villageID)
 
 	if err != nil {
 		return nil, errors.New("Error fetching buildings")
@@ -50,7 +50,7 @@ func AddBuilding(userID string, buildingName string, x, y int) (int, int, error)
 	var resourceType string
 
 	configQuery := `
-		SELECT b.size, b.build_resource_type, c.build_cost, c.min_thlevel
+		SELECT b.size, b.build_resource_type, c.build_cost, c.min_thlevel, c.build_time_seconds
 		FROM building_configs b
 		JOIN (
 			SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM defense_configs
