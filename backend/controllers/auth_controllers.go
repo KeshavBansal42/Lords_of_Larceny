@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"time"
+	"unicode"
 
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/dtos"
 	"github.com/KeshavBansal42/Lords_of_Larceny/backend/repository"
@@ -16,6 +18,41 @@ func hashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
+func validatePassword(password string) error {
+	if len(password) < 8 {
+		return errors.New("Password must be at least 8 characters long")
+	}
+
+	var hasUpper, hasLower, hasNumber, hasSpecial bool
+	for _, char := range password {
+		switch {
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
+		case unicode.IsNumber(char):
+			hasNumber = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			hasSpecial = true
+		}
+	}
+
+	if !hasUpper {
+		return errors.New("Password must contain at least one uppercase letter")
+	}
+	if !hasLower {
+		return errors.New("Password must contain at least one lowercase letter")
+	}
+	if !hasNumber {
+		return errors.New("Password must contain at least one number")
+	}
+	if !hasSpecial {
+		return errors.New("Password must contain at least one special character")
+	}
+
+	return nil
+}
+
 func Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
@@ -25,6 +62,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	var req dtos.RegisterRequestDTO
 	check := parseRequest(w, r, &req)
 	if !check {
+		return
+	}
+
+	err := validatePassword(req.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
