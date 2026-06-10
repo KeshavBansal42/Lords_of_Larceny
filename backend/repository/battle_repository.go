@@ -27,7 +27,7 @@ func Matchmake(userID string) (string, error) {
         WHERE v.user_id = $1
         GROUP BY v.id, v.town_hall_level
     `
-	err := db.Conn.QueryRow(ctx, query, userID).Scan(&villageID, &townHallLevel, &troopCount)
+	err := db.Pool.QueryRow(ctx, query, userID).Scan(&villageID, &townHallLevel, &troopCount)
 
 	if err != nil {
 		return "", errors.New("Error finding user info.")
@@ -45,7 +45,7 @@ func Matchmake(userID string) (string, error) {
           AND (last_attacked_at IS NULL OR last_attacked_at < NOW() - INTERVAL '6 hours')
         LIMIT 50
     `
-	rows, err := db.Conn.Query(ctx, matchQuery, villageID, (townHallLevel - 1), (townHallLevel + 1))
+	rows, err := db.Pool.Query(ctx, matchQuery, villageID, (townHallLevel - 1), (townHallLevel + 1))
 
 	if err != nil {
 		return "", errors.New("Error fetching users")
@@ -141,7 +141,7 @@ func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liv
 func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int, int, int, []dtos.BattleEventDTO, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
@@ -407,7 +407,7 @@ func GetBattleHistory(userID string) ([]dtos.BattleRecordDTO, error) {
 		ORDER BY occurred_at DESC
 		LIMIT 20
 	`
-	rows, err := db.Conn.Query(ctx, query, userID)
+	rows, err := db.Pool.Query(ctx, query, userID)
 
 	if err != nil {
 		return nil, errors.New("Error fetching battle history")

@@ -13,7 +13,7 @@ import (
 func CreateUserAndVillage(username, password_hash string) (string, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +51,7 @@ func CreateUserAndVillage(username, password_hash string) (string, error) {
 func GetUserByUsername(username string) (string, string, error) {
 	var userID string
 	var passwordHash string
-	err := db.Conn.QueryRow(context.Background(), "SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
+	err := db.Pool.QueryRow(context.Background(), "SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
 
 	if err != nil {
 		return "", "", errors.New("Error getting the userID and PasswordHash")
@@ -65,7 +65,7 @@ func GetVillageByUserID(userID string) (string, int, int, int, error) {
 	var gold int
 	var elixir int
 	var villageID string
-	err := db.Conn.QueryRow(context.Background(), "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel, &gold, &elixir)
+	err := db.Pool.QueryRow(context.Background(), "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel, &gold, &elixir)
 
 	if err != nil {
 		return "", 0, 0, 0, errors.New("Error fetching the village")
@@ -77,7 +77,7 @@ func GetVillageByUserID(userID string) (string, int, int, int, error) {
 func CollectGold(userID string) (int, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -158,7 +158,7 @@ func CollectGold(userID string) (int, error) {
 func CollectElixir(userID string) (int, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -251,12 +251,12 @@ func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingRe
 		JOIN users u ON v.user_id = u.id
 		WHERE v.user_id = $1
 	`
-	err := db.Conn.QueryRow(ctx, userQuery, targetUserID).Scan(&username, &villageID, &thLevel, &gold, &elixir)
+	err := db.Pool.QueryRow(ctx, userQuery, targetUserID).Scan(&username, &villageID, &thLevel, &gold, &elixir)
 	if err != nil {
 		return "", 0, 0, 0, nil, errors.New("Village not found")
 	}
 
-	buildingRows, err := db.Conn.Query(ctx, "SELECT building_name, level, x, y, status FROM village_buildings WHERE village_id = $1", villageID)
+	buildingRows, err := db.Pool.Query(ctx, "SELECT building_name, level, x, y, status FROM village_buildings WHERE village_id = $1", villageID)
 	if err != nil {
 		return "", 0, 0, 0, nil, errors.New("Error fetching enemy buildings")
 	}
@@ -273,7 +273,7 @@ func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingRe
 func DeleteAccount(userID string) error {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}

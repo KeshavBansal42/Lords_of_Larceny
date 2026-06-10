@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
-var Conn *pgx.Conn
+var Pool *pgxpool.Pool
 
 func InitDB() {
 	err := godotenv.Load()
@@ -18,10 +18,11 @@ func InitDB() {
 	}
 	connectionString := os.Getenv("DATABASE_URL")
 
-	Conn, err = pgx.Connect(context.Background(), connectionString)
+	Pool, err = pgxpool.New(context.Background(), connectionString)
 	if err != nil {
-		log.Println("Error connecting to database")
+		log.Println("Error connecting to database:", err)
+		os.Exit(1) // Better to crash on boot if DB is down
 	}
 
-	SeedDatabase(Conn)
+	SeedDatabase(Pool)
 }

@@ -12,7 +12,7 @@ import (
 func TrainTroops(userID string, troopsToTrain map[int]int) error {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func TrainTroops(userID string, troopsToTrain map[int]int) error {
 }
 
 func GetAllVillageTroops(villageID string) ([]dtos.TroopResponseFromDBDTO, error) {
-	rows, err := db.Conn.Query(context.Background(), "SELECT troop_id, quantity FROM village_troops WHERE village_id = $1", villageID)
+	rows, err := db.Pool.Query(context.Background(), "SELECT troop_id, quantity FROM village_troops WHERE village_id = $1", villageID)
 
 	if err != nil {
 		return nil, errors.New("Error fetching troops")

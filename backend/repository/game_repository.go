@@ -36,7 +36,7 @@ func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
 		WHERE COALESCE(d.level, rg.level, rs.level, ac.level) IS NOT NULL
 		ORDER BY b.name ASC, level ASC
 	`
-	buildingRows, err := db.Conn.Query(ctx, buildingQuery)
+	buildingRows, err := db.Pool.Query(ctx, buildingQuery)
 	if err != nil {
 		return nil, nil, errors.New("failed to fetch building configs")
 	}
@@ -52,7 +52,7 @@ func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
 		FROM troop_configs
 		ORDER BY MIN(id) OVER (PARTITION BY name) ASC, level ASC
 	`
-	troopRows, err := db.Conn.Query(ctx, troopQuery)
+	troopRows, err := db.Pool.Query(ctx, troopQuery)
 	if err != nil {
 		return nil, nil, errors.New("failed to fetch troop configs")
 	}

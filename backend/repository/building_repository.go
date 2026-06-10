@@ -11,7 +11,7 @@ import (
 )
 
 func GetAllVillageBuildings(villageID string) ([]dtos.BuildingResponseFromDBDTO, error) {
-	rows, err := db.Conn.Query(context.Background(), "SELECT building_name, level, x, y, status FROM village_buildings WHERE village_id = $1", villageID)
+	rows, err := db.Pool.Query(context.Background(), "SELECT building_name, level, x, y, status FROM village_buildings WHERE village_id = $1", villageID)
 
 	if err != nil {
 		return nil, errors.New("Error fetching buildings")
@@ -29,7 +29,7 @@ func GetAllVillageBuildings(villageID string) ([]dtos.BuildingResponseFromDBDTO,
 func AddBuilding(userID string, buildingName string, x, y int) (int, int, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -125,7 +125,7 @@ func AddBuilding(userID string, buildingName string, x, y int) (int, int, error)
 func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -228,7 +228,7 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 func MoveBuilding(userID string, oldX, oldY, newX, newY int) error {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func MoveBuilding(userID string, oldX, oldY, newX, newY int) error {
 func SyncBuildings(userID string) error {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
