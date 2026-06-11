@@ -32,6 +32,7 @@ type BuildingConfig struct {
 	SingleTarget      bool    `json:"single_target"`
 	SplashRadius      float64 `json:"splash_radius"`
 	TargetType        string  `json:"target_type"`
+	BuildTimeSeconds  int     `json:"build_time_seconds"`
 }
 
 type TroopConfig struct {

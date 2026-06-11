@@ -9,9 +9,19 @@ import (
 
 func SeedDatabase(conn *pgxpool.Pool) {
 	ctx := context.Background()
-	var count int
 
-	err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM troop_configs").Scan(&count)
+	// 0. Insert system ghost user for deleted accounts to preserve battle history
+	_, err := conn.Exec(ctx, `
+		INSERT INTO users (id, username, password_hash) 
+		VALUES ('00000000-0000-0000-0000-000000000000', 'Deleted User', 'system_ghost_hash')
+		ON CONFLICT (id) DO NOTHING;
+	`)
+	if err != nil {
+		log.Println("Failed to seed system ghost user: ", err)
+	}
+
+	var count int
+	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM troop_configs").Scan(&count)
 	if err != nil {
 		log.Println("Failed to count troops: ", err)
 	}
@@ -53,64 +63,101 @@ func SeedDatabase(conn *pgxpool.Pool) {
 			log.Println("Failed to seed base building configs: ", err)
 		}
 
-		// 2. Seed Defense Configurations
+		// 2. Seed Building Level Info (Common Stats)
+		levelInfoQuery := `
+			INSERT INTO building_level_info (name, level, hit_points, build_cost, min_thlevel, build_time_seconds) VALUES 
+			('Cannon', 1, 300, 250, 1, 60),
+			('Cannon', 2, 340, 1000, 2, 120),
+			('Cannon', 3, 400, 4000, 3, 300),
+			('Cannon', 4, 450, 16000, 4, 600),
+			('Archer Tower', 1, 380, 1000, 1, 60),
+			('Archer Tower', 2, 420, 2000, 2, 120),
+			('Archer Tower', 3, 460, 5000, 3, 300),
+			('Archer Tower', 4, 500, 20000, 4, 600),
+			('Mortar', 1, 400, 8000, 3, 300),
+			('Mortar', 2, 450, 32000, 3, 600),
+			('Mortar', 3, 500, 120000, 4, 1200),
+			('Mortar', 4, 550, 180000, 4, 2400),
+			('Gold Mine', 1, 75, 150, 1, 60),
+			('Gold Mine', 2, 150, 300, 2, 120),
+			('Gold Mine', 3, 300, 700, 3, 300),
+			('Gold Mine', 4, 400, 1400, 4, 600),
+			('Elixir Collector', 1, 75, 150, 1, 60),
+			('Elixir Collector', 2, 150, 300, 2, 120),
+			('Elixir Collector', 3, 300, 700, 3, 300),
+			('Elixir Collector', 4, 400, 1400, 4, 600),
+			('Town Hall', 1, 400, 0, 1, 0),
+			('Town Hall', 2, 800, 1000, 1, 60),
+			('Town Hall', 3, 1600, 4000, 1, 300),
+			('Town Hall', 4, 2000, 25000, 1, 1200),
+			('Army Camp', 1, 100, 200, 1, 60),
+			('Army Camp', 2, 150, 2000, 2, 120),
+			('Army Camp', 3, 200, 10000, 3, 300),
+			('Army Camp', 4, 250, 100000, 4, 600);
+		`
+		_, err = conn.Exec(ctx, levelInfoQuery)
+		if err != nil {
+			log.Println("Failed to seed building level info: ", err)
+		}
+
+		// 3. Seed Defense Configurations (Stripped down)
 		defenseQuery := `
-			INSERT INTO defense_configs (name, level, hit_points, build_cost, min_thlevel, damage, range, single_target, splash_radius, target_type) VALUES 
-			('Cannon', 1, 300, 250, 1, 7, 4, TRUE, 0, 'ground'),
-			('Cannon', 2, 340, 1000, 2, 11, 4, TRUE, 0, 'ground'),
-			('Cannon', 3, 400, 4000, 3, 15, 4, TRUE, 0, 'ground'),
-			('Cannon', 4, 450, 16000, 4, 19, 4, TRUE, 0, 'ground'),
-			('Archer Tower', 1, 380, 1000, 1, 11, 4, TRUE, 0, 'both'),
-			('Archer Tower', 2, 420, 2000, 2, 15, 4, TRUE, 0, 'both'),
-			('Archer Tower', 3, 460, 5000, 3, 19, 4, TRUE, 0, 'both'),
-			('Archer Tower', 4, 500, 20000, 4, 25, 4, TRUE, 0, 'both'),
-			('Mortar', 1, 400, 8000, 3, 4, 6, FALSE, 2.5, 'ground'),
-			('Mortar', 2, 450, 32000, 3, 5, 6, FALSE, 2.5, 'ground'),
-			('Mortar', 3, 500, 120000, 4, 6, 6, FALSE, 2.5, 'ground'),
-			('Mortar', 4, 550, 180000, 4, 7, 6, FALSE, 2.5, 'ground');
+			INSERT INTO defense_configs (name, level, damage, range, single_target, splash_radius, target_type) VALUES 
+			('Cannon', 1, 7, 4, TRUE, 0, 'ground'),
+			('Cannon', 2, 11, 4, TRUE, 0, 'ground'),
+			('Cannon', 3, 15, 4, TRUE, 0, 'ground'),
+			('Cannon', 4, 19, 4, TRUE, 0, 'ground'),
+			('Archer Tower', 1, 11, 4, TRUE, 0, 'both'),
+			('Archer Tower', 2, 15, 4, TRUE, 0, 'both'),
+			('Archer Tower', 3, 19, 4, TRUE, 0, 'both'),
+			('Archer Tower', 4, 25, 4, TRUE, 0, 'both'),
+			('Mortar', 1, 4, 6, FALSE, 2.5, 'ground'),
+			('Mortar', 2, 5, 6, FALSE, 2.5, 'ground'),
+			('Mortar', 3, 6, 6, FALSE, 2.5, 'ground'),
+			('Mortar', 4, 7, 6, FALSE, 2.5, 'ground');
 		`
 		_, err = conn.Exec(ctx, defenseQuery)
 		if err != nil {
 			log.Println("Failed to seed defense configs: ", err)
 		}
 
-		// 3. Seed Resource Generators
+		// 4. Seed Resource Generators (Stripped down)
 		resGenQuery := `
-			INSERT INTO resource_gen_configs (name, level, hit_points, build_cost, min_thlevel, production_per_min, capacity, resource_type) VALUES 
-			('Gold Mine', 1, 75, 150, 1, 3, 1000, 'gold'),
-			('Gold Mine', 2, 150, 300, 2, 6, 2000, 'gold'),
-			('Gold Mine', 3, 300, 700, 3, 10, 3000, 'gold'),
-			('Gold Mine', 4, 400, 1400, 4, 13, 5000, 'gold'),
-			('Elixir Collector', 1, 75, 150, 1, 3, 1000, 'elixir'),
-			('Elixir Collector', 2, 150, 300, 2, 6, 2000, 'elixir'),
-			('Elixir Collector', 3, 300, 700, 3, 10, 3000, 'elixir'),
-			('Elixir Collector', 4, 400, 1400, 4, 13, 5000, 'elixir');
+			INSERT INTO resource_gen_configs (name, level, production_per_min, capacity, resource_type) VALUES 
+			('Gold Mine', 1, 3, 1000, 'gold'),
+			('Gold Mine', 2, 6, 2000, 'gold'),
+			('Gold Mine', 3, 10, 3000, 'gold'),
+			('Gold Mine', 4, 13, 5000, 'gold'),
+			('Elixir Collector', 1, 3, 1000, 'elixir'),
+			('Elixir Collector', 2, 6, 2000, 'elixir'),
+			('Elixir Collector', 3, 10, 3000, 'elixir'),
+			('Elixir Collector', 4, 13, 5000, 'elixir');
 		`
 		_, err = conn.Exec(ctx, resGenQuery)
 		if err != nil {
 			log.Println("Failed to seed resource generators: ", err)
 		}
 
-		// 4. Seed Resource Storages
+		// 5. Seed Resource Storages (Stripped down)
 		storageQuery := `
-			INSERT INTO resource_storage_configs (name, level, hit_points, build_cost, min_thlevel, resource_type, storage_capacity) VALUES 
-			('Town Hall', 1, 400, 0, 1, 'both', 1000),
-			('Town Hall', 2, 800, 1000, 1, 'both', 2500),
-			('Town Hall', 3, 1600, 4000, 1, 'both', 10000),
-			('Town Hall', 4, 2000, 25000, 1, 'both', 50000);
+			INSERT INTO resource_storage_configs (name, level, resource_type, storage_capacity) VALUES 
+			('Town Hall', 1, 'both', 1000),
+			('Town Hall', 2, 'both', 2500),
+			('Town Hall', 3, 'both', 10000),
+			('Town Hall', 4, 'both', 50000);
 		`
 		_, err = conn.Exec(ctx, storageQuery)
 		if err != nil {
 			log.Println("Failed to seed resource storages: ", err)
 		}
 
-		// 5. Seed Army Camps
+		// 6. Seed Army Camps (Stripped down)
 		armyCampQuery := `
-			INSERT INTO army_camp_configs (name, level, hit_points, build_cost, min_thlevel, total_housing_space) VALUES 
-			('Army Camp', 1, 100, 200, 1, 20),
-			('Army Camp', 2, 150, 2000, 2, 30),
-			('Army Camp', 3, 200, 10000, 3, 35),
-			('Army Camp', 4, 250, 100000, 4, 40);
+			INSERT INTO army_camp_configs (name, level, total_housing_space) VALUES 
+			('Army Camp', 1, 20),
+			('Army Camp', 2, 30),
+			('Army Camp', 3, 35),
+			('Army Camp', 4, 40);
 		`
 		_, err = conn.Exec(ctx, armyCampQuery)
 		if err != nil {
@@ -118,7 +165,7 @@ func SeedDatabase(conn *pgxpool.Pool) {
 		}
 	}
 
-	// 6. Seed Fake Users for Matchmaking
+	// 7. Seed Fake Users for Matchmaking
 	var botCount int
 	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE username LIKE 'bot_%'").Scan(&botCount)
 	if err != nil {

@@ -108,6 +108,11 @@ func CollectGold(userID string) (int, error) {
 	}
 
 	if goldRate == 0 {
+		_, err = tx.Exec(ctx, "UPDATE villages SET gold_last_collected_at = NOW() WHERE id = $1", villageID)
+		if err != nil {
+			return 0, errors.New("error resetting collection timer")
+		}
+
 		if err = tx.Commit(ctx); err != nil {
 			return 0, err
 		}
@@ -189,6 +194,11 @@ func CollectElixir(userID string) (int, error) {
 	}
 
 	if elixirRate == 0 {
+		_, err = tx.Exec(ctx, "UPDATE villages SET elixir_last_collected_at = NOW() WHERE id = $1", villageID)
+		if err != nil {
+			return 0, errors.New("error resetting collection timer")
+		}
+
 		if err = tx.Commit(ctx); err != nil {
 			return 0, err
 		}
@@ -278,6 +288,21 @@ func DeleteAccount(userID string) error {
 		return err
 	}
 	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "UPDATE battles SET attacker_id = '00000000-0000-0000-0000-000000000000' WHERE attacker_id = $1", userID)
+	if err != nil {
+		return errors.New("Error updating battle history")
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE battles SET defender_id = '00000000-0000-0000-0000-000000000000' WHERE defender_id = $1", userID)
+	if err != nil {
+		return errors.New("Error updating battle history")
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE battles SET winner_id = '00000000-0000-0000-0000-000000000000' WHERE winner_id = $1", userID)
+	if err != nil {
+		return errors.New("Error updating battle history")
+	}
 
 	_, err = tx.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
 	if err != nil {

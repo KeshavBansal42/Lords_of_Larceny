@@ -49,6 +49,10 @@ func TrainTroops(userID string, troopsToTrain map[int]int) error {
 
 	requestedSpace := 0
 	for troopID, quantity := range troopsToTrain {
+		if quantity <= 0 {
+			return errors.New("Troop quantity must be greater than zero")
+		}
+
 		var housingSpace int
 		var minThLevel int
 		err = tx.QueryRow(ctx, "SELECT housing_space, min_thlevel FROM troop_configs WHERE id = $1", troopID).Scan(&housingSpace, &minThLevel)

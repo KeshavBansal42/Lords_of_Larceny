@@ -50,15 +50,10 @@ func AddBuilding(userID string, buildingName string, x, y int) (int, int, error)
 	var resourceType string
 
 	configQuery := `
-		SELECT b.size, b.build_resource_type, c.build_cost, c.min_thlevel, c.build_time_seconds
+		SELECT b.size, b.build_resource_type, bli.build_cost, bli.min_thlevel, bli.build_time_seconds
 		FROM building_configs b
-		JOIN (
-			SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM defense_configs
-			UNION ALL SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM resource_gen_configs
-			UNION ALL SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM resource_storage_configs
-			UNION ALL SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM army_camp_configs
-		) c ON b.name = c.name
-		WHERE b.name = $1 AND c.level = 1
+		JOIN building_level_info bli ON b.name = bli.name
+		WHERE b.name = $1 AND bli.level = 1
 	`
 	err = tx.QueryRow(ctx, configQuery, buildingName).Scan(&size, &resourceType, &buildCost, &minThLevel, &buildTimeSeconds)
 	if err != nil {
@@ -140,11 +135,16 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 		return 0, 0, errors.New("Error fetching village details.")
 	}
 
-	var buildingName string
+	var buildingName, currentStatus string
 	var currentLevel int
-	err = tx.QueryRow(ctx, "SELECT building_name, level FROM village_buildings WHERE village_id = $1 AND x = $2 AND y = $3", villageID, x, y).Scan(&buildingName, &currentLevel)
+
+	err = tx.QueryRow(ctx, "SELECT building_name, level, status FROM village_buildings WHERE village_id = $1 AND x = $2 AND y = $3", villageID, x, y).Scan(&buildingName, &currentLevel, &currentStatus)
 	if err != nil {
 		return gold, elixir, errors.New("error getting building info on grid")
+	}
+
+	if currentStatus == "upgrading" {
+		return gold, elixir, errors.New("building is already upgrading")
 	}
 
 	if buildingName == "Gold Mine" {
@@ -173,15 +173,10 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 	var resourceType string
 
 	costQuery := `
-		SELECT b.build_resource_type, c.build_cost, c.min_thlevel
+		SELECT b.build_resource_type, bli.build_cost, bli.min_thlevel, bli.build_time_seconds
 		FROM building_configs b
-		JOIN (
-			SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM defense_configs
-			UNION ALL SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM resource_gen_configs
-			UNION ALL SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM resource_storage_configs
-			UNION ALL SELECT name, level, build_cost, min_thlevel, build_time_seconds FROM army_camp_configs
-		) c ON b.name = c.name
-		WHERE b.name = $1 AND c.level = $2
+		JOIN building_level_info bli ON b.name = bli.name
+		WHERE b.name = $1 AND bli.level = $2
 	`
 	err = tx.QueryRow(ctx, costQuery, buildingName, currentLevel+1).Scan(&resourceType, &upgradeCost, &minThLevel, &buildTimeSeconds)
 	if err != nil {
@@ -209,13 +204,6 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 	_, err = tx.Exec(ctx, "UPDATE village_buildings SET status = 'upgrading', upgrade_complete_at = NOW() + INTERVAL '1 second' * $4 WHERE village_id = $1 AND x = $2 AND y = $3", villageID, x, y, buildTimeSeconds)
 	if err != nil {
 		return gold, elixir, errors.New("couldn't update village building")
-	}
-
-	if buildingName == "Town Hall" {
-		_, err = tx.Exec(ctx, "UPDATE villages SET town_hall_level = $1 WHERE id = $2", currentLevel+1, villageID)
-		if err != nil {
-			return gold, elixir, errors.New("error updating town hall level")
-		}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
