@@ -70,6 +70,7 @@ export interface Building {
   x: number;
   y: number;
   status: string;
+  upgrade_complete_at?: string;
 }
 
 export interface LiveTroop {
@@ -77,4 +78,13 @@ export interface LiveTroop {
   troopId: number;
   x: number;
   y: number;
+}
+
+export interface BattleRecord {
+  id: number;
+  attacker_id: string;
+  defender_id: string;
+  winner_id: string;
+  damage_percent: number;
+  occurred_at: string;
 }

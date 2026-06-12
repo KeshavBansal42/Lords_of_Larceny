@@ -1,9 +1,9 @@
 import { Application, extend } from '@pixi/react';
-import { Graphics } from 'pixi.js'; 
-import { useCallback } from 'react';
 import type { Building, LiveTroop } from '../types';
+import { Graphics, Text, TextStyle } from 'pixi.js';
+import React, { useCallback } from 'react';
 
-extend({ Graphics });
+extend({ Graphics, Text });
 
 const TILE_SIZE = 20;
 const GRID_SIZE = 36;
@@ -13,14 +13,32 @@ interface CanvasProps {
   buildings: Building[];
   deployedTroops?: LiveTroop[];
   onMapClick?: (x: number, y: number) => void;
+  redZones?: { x: number, y: number, w: number, h: number }[];
+  currentTime?: number;
 }
 
-export default function VillageCanvas({ buildings, deployedTroops = [], onMapClick }: CanvasProps) {
+const formatRemainingTime = (completeAtStr: string, now: number) => {
+  const completeAt = new Date(completeAtStr).getTime();
+  const diff = completeAt - now;
+  if (diff <= 0) return "Ready!";
+  
+  const m = Math.floor(diff / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  return `${m}m ${s}s`;
+};
+
+export default function VillageCanvas({ buildings, deployedTroops = [], onMapClick, redZones, currentTime }: CanvasProps) {
   
   const drawBackground = useCallback((g: Graphics) => {
     g.clear();
     
     g.rect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    g.fill(0x6b826b);
+    
+    const perimeterSize = 2 * TILE_SIZE;
+    const innerSize = (GRID_SIZE - 4) * TILE_SIZE;
+    
+    g.rect(perimeterSize, perimeterSize, innerSize, innerSize);
     g.fill(0x4ade80); 
     
     for (let i = 0; i <= GRID_SIZE; i++) {
@@ -50,6 +68,22 @@ export default function VillageCanvas({ buildings, deployedTroops = [], onMapCli
     g.fill(color);
   }, []);
 
+  const drawRedZone = useCallback((g: Graphics, zone: { x: number, y: number, w: number, h: number }) => {
+    g.clear();
+    const drawX = Math.max(0, zone.x * TILE_SIZE);
+    const drawY = Math.max(0, zone.y * TILE_SIZE);
+    const rightEdge = Math.min(CANVAS_SIZE, (zone.x + zone.w) * TILE_SIZE);
+    const bottomEdge = Math.min(CANVAS_SIZE, (zone.y + zone.h) * TILE_SIZE);
+    
+    const drawW = rightEdge - drawX;
+    const drawH = bottomEdge - drawY;
+
+    if (drawW > 0 && drawH > 0) {
+      g.rect(drawX, drawY, drawW, drawH);
+      g.fill({ color: 0xef4444, alpha: 0.3 });
+    }
+  }, []);
+
   return (
     <Application width={CANVAS_SIZE} height={CANVAS_SIZE}>
       
@@ -65,13 +99,31 @@ export default function VillageCanvas({ buildings, deployedTroops = [], onMapCli
         }}
       />
 
-      {buildings.map((b, index) => (
+      {redZones && redZones.map((zone, index) => (
         <pixiGraphics 
-          key={index} 
-          draw={(g) => drawBuilding(g, b)} 
-          x={b.x * TILE_SIZE} 
-          y={b.y * TILE_SIZE} 
+          key={`redzone-${index}`} 
+          draw={(g) => drawRedZone(g, zone)} 
         />
+      ))}
+
+      {buildings.map((b, index) => (
+        <React.Fragment key={`bldg-container-${index}`}>
+          <pixiGraphics 
+            draw={(g) => drawBuilding(g, b)} 
+            x={b.x * TILE_SIZE} 
+            y={b.y * TILE_SIZE} 
+          />
+          
+          {/* UPGRADE TIMER TEXT */}
+          {b.status === 'upgrading' && b.upgrade_complete_at && (
+            <pixiText 
+              text={formatRemainingTime(b.upgrade_complete_at, currentTime || Date.now())}
+              x={b.x * TILE_SIZE}
+              y={(b.y * TILE_SIZE) - 15}
+              style={new TextStyle({ fill: '#eab308', fontSize: 12, fontWeight: 'bold', stroke: {color: 'black', width: 2} })}
+            />
+          )}
+        </React.Fragment>
       ))}
 
       {deployedTroops.map((t, index) => (

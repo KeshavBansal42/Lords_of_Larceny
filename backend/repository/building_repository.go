@@ -64,7 +64,7 @@ func AddBuilding(userID string, buildingName string, x, y int) (int, int, error)
 		return gold, elixir, errors.New("minimum Town Hall Level requirement not met")
 	}
 
-	if x < 0 || y < 0 || x+size > 36 || y+size > 36 {
+	if x < 2 || y < 2 || x+size > 34 || y+size > 34 {
 		return gold, elixir, errors.New("building is out of bounds")
 	}
 
@@ -245,7 +245,7 @@ func MoveBuilding(userID string, oldX, oldY, newX, newY int) error {
 		return errors.New("No such building exists.")
 	}
 
-	if newX < 0 || newY < 0 || newX+size > 36 || newY+size > 36 {
+	if newX < 2 || newY < 2 || newX+size > 34 || newY+size > 34 {
 		return errors.New("Out of village bounds.")
 	}
 

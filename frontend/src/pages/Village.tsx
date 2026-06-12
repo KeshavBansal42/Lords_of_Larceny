@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import VillageCanvas from '../components/VillageCanvas';
 import { getGameConfigs } from '../services/game';
 import { findMatch, scoutVillage, attackVillage } from '../services/battle';
 import type { Building, LiveTroop, BattleEvent } from '../types';
-import { getVillageStats, getVillageBuildings, buildBuilding, getVillageTroops, trainTroops, collectGold, collectElixir, upgradeBuilding, moveBuilding } from '../services/village';
+import { getVillageStats, getVillageBuildings, buildBuilding, getVillageTroops, trainTroops, collectGold, collectElixir, upgradeBuilding, moveBuilding, getBattleHistory } from '../services/village';
 
 export default function Village() {
   const [errorMsg, setErrorMsg] = useState("");
@@ -31,6 +31,25 @@ export default function Village() {
     townHallLevel, gold, elixir, buildingConfigs, troopConfigs, army,
     setVillageStats, setBuildingConfigs, setTroopConfigs, setArmy, addTroopsToArmy, spendGold, spendElixir 
   } = useGameStore();
+
+  const [battleHistory, setBattleHistory] = useState<any[]>([]);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getMyUserId = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.user_id;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -83,10 +102,43 @@ export default function Village() {
 
   const remainingHousing = maxHousing - usedHousing - pendingHousingSpace;
 
+  const GRID_SIZE = 36;
+  const PERIMETER_GAP = 2;
+
+  const restrictedZones = useMemo(() => {
+    if (!enemyVillage) return [];
+    
+    return liveBuildings.map(b => {
+      const configLevel = b.level === 0 ? 1 : b.level;
+      const config = buildingConfigs.find(c => c.name === b.building_name && c.level === configLevel);
+      const size = config?.size || 2; 
+      
+      return { x: b.x - 1, y: b.y - 1, w: size + 2, h: size + 2 };
+    });
+  }, [enemyVillage, liveBuildings, buildingConfigs]);
+
+  const handleOpenHistory = async () => {
+    setErrorMsg("");
+    try {
+      const history = await getBattleHistory(); 
+      setBattleHistory(history.battles || history);
+      setActiveTab("history");
+    } catch (error: any) {
+      setErrorMsg(error.message);
+    }
+  };
+
   const handleMapClick = async (x: number, y: number) => {
     setErrorMsg("");
 
     if (movingBuilding) {
+      const configLevel = movingBuilding.level === 0 ? 1 : movingBuilding.level;
+      const config = buildingConfigs.find(c => c.name === movingBuilding.building_name && c.level === configLevel);
+      const size = config?.size || 2; 
+
+      if (x < PERIMETER_GAP || x + size > GRID_SIZE - PERIMETER_GAP || y < PERIMETER_GAP || y + size > GRID_SIZE - PERIMETER_GAP) {
+        return setErrorMsg("Buildings cannot be placed in the outer 2-tile perimeter!");
+      }
       try {
         await moveBuilding(movingBuilding.x, movingBuilding.y, x, y);
         
@@ -104,6 +156,11 @@ export default function Village() {
     }
 
     if (pendingBuilding) {
+      const size = pendingBuilding.size || 2;
+      
+      if (x < PERIMETER_GAP || x + size > GRID_SIZE - PERIMETER_GAP || y < PERIMETER_GAP || y + size > GRID_SIZE - PERIMETER_GAP) {
+        return setErrorMsg("Buildings cannot be placed in the outer 2-tile perimeter!");
+      }
       try {
         await buildBuilding(pendingBuilding.name, x, y);
         if (pendingBuilding.build_resource_type === 'gold') spendGold(pendingBuilding.build_cost);
@@ -195,6 +252,15 @@ export default function Village() {
 
   const handleDeployTroop = (x: number, y: number) => {
     if (battlePhase !== 'scout' || !selectedDeployTroop || !battleArmy[selectedDeployTroop]) return;
+
+    const isInRedZone = restrictedZones.some(zone => 
+      x >= zone.x && x < (zone.x + zone.w) &&
+      y >= zone.y && y < (zone.y + zone.h)
+    );
+
+    if (isInRedZone) {
+      return setErrorMsg("You cannot deploy troops inside the red zone!");
+    }
 
     const newTroop: LiveTroop = {
       id: `troop_${liveTroops.length + 1}`,
@@ -321,6 +387,7 @@ export default function Village() {
         <button onClick={() => setActiveTab("build")}>🔨 Build</button>
         <button onClick={() => setActiveTab("train")}>⚔️ Train Troops</button>
         <button onClick={() => setActiveTab("battle")}>🛡️ Battle</button>
+        <button onClick={handleOpenHistory}>📜 History</button>
       </div>
 
       <div style={{ flex: 1, padding: '20px', position: 'relative' }}>
@@ -338,13 +405,15 @@ export default function Village() {
           {enemyVillage ? (
             <VillageCanvas 
               buildings={liveBuildings} 
-              deployedTroops={liveTroops} 
+              deployedTroops={liveTroops}
+              redZones={battlePhase === 'scout' ? restrictedZones : []} 
               onMapClick={handleDeployTroop} 
             />
           ) : (
             <VillageCanvas 
               buildings={buildings} 
               onMapClick={handleMapClick} 
+              currentTime={currentTime}
             />
           )}
         </div>
@@ -567,6 +636,46 @@ export default function Village() {
             >
               Find Match (50 Gold)
             </button>
+          </div>
+        )}
+
+        {activeTab === "history" && (
+          <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'white', color: 'black', padding: '20px', borderRadius: '8px', width: '350px', maxHeight: '400px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ margin: 0 }}>Battle History</h3>
+              <button onClick={() => setActiveTab("none")}>Close</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {battleHistory.length === 0 ? (
+                <p style={{ color: '#666', fontSize: '14px' }}>No battles found. You are safe... for now.</p>
+              ) : (
+                battleHistory.map((log, index) => {
+                  const myUserId = getMyUserId();
+                  const isAttacker = log.attacker_id === myUserId;
+                  const isWinner = log.winner_id === myUserId;
+                  
+                  return (
+                    <div key={index} style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '6px', background: isWinner ? '#f0fdf4' : '#fef2f2' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '5px' }}>
+                        <span style={{ color: isWinner ? '#166534' : '#991b1b' }}>
+                          {isAttacker ? '🗡️ Attack' : '🛡️ Defense'}
+                        </span>
+                        <span style={{ color: isWinner ? '#166534' : '#991b1b' }}>
+                          {isWinner ? 'Victory' : 'Defeat'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#555' }}>
+                        Destruction: <span style={{ fontWeight: 'bold', color: 'black' }}>{log.damage_percent}%</span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                        {new Date(log.occurred_at).toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
 

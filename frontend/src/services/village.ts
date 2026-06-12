@@ -111,6 +111,11 @@ export const trainTroops = async (troopsToTrain: Record<number, number>) => {
 
 export const collectGold = async () => {
   const token = localStorage.getItem('token');
+
+  if (!token) {
+    throw new Error("No token found. User is not logged in.");
+  }
+
   const response = await fetch('/api/village/collect/gold', {
     method: 'PUT',
     headers: { 'Authorization': `Bearer ${token}` }
@@ -121,6 +126,11 @@ export const collectGold = async () => {
 
 export const collectElixir = async () => {
   const token = localStorage.getItem('token');
+
+  if (!token) {
+    throw new Error("No token found. User is not logged in.");
+  }
+
   const response = await fetch('/api/village/collect/elixir', {
     method: 'PUT',
     headers: { 'Authorization': `Bearer ${token}` }
@@ -131,6 +141,11 @@ export const collectElixir = async () => {
 
 export const upgradeBuilding = async (x: number, y: number) => {
   const token = localStorage.getItem('token');
+
+  if (!token) {
+    throw new Error("No token found. User is not logged in.");
+  }
+
   const response = await fetch('/api/village/buildings/upgrade', {
     method: 'PUT',
     headers: {
@@ -148,6 +163,11 @@ export const upgradeBuilding = async (x: number, y: number) => {
 
 export const moveBuilding = async (oldX: number, oldY: number, newX: number, newY: number) => {
   const token = localStorage.getItem('token');
+
+  if (!token) {
+    throw new Error("No token found. User is not logged in.");
+  }
+
   const response = await fetch('/api/village/buildings/move', {
     method: 'PUT',
     headers: {
@@ -163,4 +183,25 @@ export const moveBuilding = async (oldX: number, oldY: number, newX: number, new
   }
 
   return await response.json(); 
+};
+
+export const getBattleHistory = async () => {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    throw new Error("No token found. User is not logged in.");
+  }
+
+  const response = await fetch('/api/battle/history', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) throw new Error("Failed to fetch battle history");
+  
+  const data = await response.json();
+  return data.battles; 
 };
