@@ -1,8 +1,7 @@
-// src/components/VillageCanvas.tsx
 import { Application, extend } from '@pixi/react';
 import { Graphics } from 'pixi.js'; 
 import { useCallback } from 'react';
-import type { Building } from '../types';
+import type { Building, LiveTroop } from '../types';
 
 extend({ Graphics });
 
@@ -12,10 +11,11 @@ const CANVAS_SIZE = TILE_SIZE * GRID_SIZE;
 
 interface CanvasProps {
   buildings: Building[];
+  deployedTroops?: LiveTroop[];
   onMapClick?: (x: number, y: number) => void;
 }
 
-export default function VillageCanvas({ buildings, onMapClick }: CanvasProps) {
+export default function VillageCanvas({ buildings, deployedTroops = [], onMapClick }: CanvasProps) {
   
   const drawBackground = useCallback((g: Graphics) => {
     g.clear();
@@ -42,6 +42,14 @@ export default function VillageCanvas({ buildings, onMapClick }: CanvasProps) {
     g.fill(color);
   }, []);
 
+  const drawTroop = useCallback((g: Graphics, troop: LiveTroop) => {
+    g.clear();
+    const color = troop.troopId === 1 ? 0xef4444 : troop.troopId === 2 ? 0xa855f7 : 0x22c55e; 
+    
+    g.circle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2.5);
+    g.fill(color);
+  }, []);
+
   return (
     <Application width={CANVAS_SIZE} height={CANVAS_SIZE}>
       
@@ -50,7 +58,6 @@ export default function VillageCanvas({ buildings, onMapClick }: CanvasProps) {
         eventMode="static"
         onPointerDown={(e: any) => {
           if (onMapClick) {
-            // e.global.x is the exact pixel clicked. Divide by 20 to get the Grid X!
             const gridX = Math.floor(e.global.x / TILE_SIZE);
             const gridY = Math.floor(e.global.y / TILE_SIZE);
             onMapClick(gridX, gridY);
@@ -64,6 +71,15 @@ export default function VillageCanvas({ buildings, onMapClick }: CanvasProps) {
           draw={(g) => drawBuilding(g, b)} 
           x={b.x * TILE_SIZE} 
           y={b.y * TILE_SIZE} 
+        />
+      ))}
+
+      {deployedTroops.map((t, index) => (
+        <pixiGraphics 
+          key={`troop-${index}`} 
+          draw={(g) => drawTroop(g, t)} 
+          x={t.x * TILE_SIZE} 
+          y={t.y * TILE_SIZE} 
         />
       ))}
       

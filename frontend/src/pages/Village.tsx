@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
-import type { Building } from '../types';
 import VillageCanvas from '../components/VillageCanvas';
 import { getGameConfigs } from '../services/game';
+import { findMatch, scoutVillage, attackVillage } from '../services/battle';
+import type { Building, LiveTroop, BattleEvent } from '../types';
 import { getVillageStats, getVillageBuildings, buildBuilding, getVillageTroops, trainTroops, collectGold, collectElixir, upgradeBuilding, moveBuilding } from '../services/village';
 
 export default function Village() {
   const [errorMsg, setErrorMsg] = useState("");
+  const [enemyVillage, setEnemyVillage] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("none");
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [pendingBuilding, setPendingBuilding] = useState<any>(null);
   const [trainQuantities, setTrainQuantities] = useState<Record<number, number>>({});
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [movingBuilding, setMovingBuilding] = useState<Building | null>(null);
+  
+  const [battlePhase, setBattlePhase] = useState<'scout' | 'playback' | 'result'>('scout');
+  const [battleArmy, setBattleArmy] = useState<Record<number, number>>({});
+  const [selectedDeployTroop, setSelectedDeployTroop] = useState<number | null>(null);
+  
+  const [liveBuildings, setLiveBuildings] = useState<Building[]>([]);
+  const [liveTroops, setLiveTroops] = useState<LiveTroop[]>([]);
+  const [battleLog, setBattleLog] = useState<BattleEvent[]>([]);
+  const [currentTick, setCurrentTick] = useState(0);
+
+  const [deployedTroops, setDeployedTroops] = useState<{ troopId: number, x: number, y: number }[]>([])
 
   const { 
     townHallLevel, gold, elixir, buildingConfigs, troopConfigs, army,
@@ -149,6 +162,123 @@ export default function Village() {
     }
   };
 
+  const handleFindMatch = async () => {
+    setErrorMsg("");
+    try {
+      if (gold < 50) return setErrorMsg("Not enough gold to find a match!");
+      const matchData = await findMatch();
+      const scoutData = await scoutVillage(matchData.userid);
+      spendGold(50); 
+      
+      const mappedBuildings = (scoutData.buildings || []).map((b: any, index: number) => ({
+        ...b,
+        id: `building_${index + 1}`
+      }));
+
+      setEnemyVillage({
+        id: matchData.userid,
+        owner: scoutData.username,
+        goldToSteal: scoutData.gold,
+        elixirToSteal: scoutData.elixir
+      });
+      
+      setLiveBuildings(mappedBuildings);
+      setLiveTroops([]);
+      setBattleArmy({ ...army });
+      setSelectedDeployTroop(null);
+      setBattlePhase('scout');
+      setActiveTab("none"); 
+    } catch (error: any) {
+      setErrorMsg(error.message);
+    }
+  };
+
+  const handleDeployTroop = (x: number, y: number) => {
+    if (battlePhase !== 'scout' || !selectedDeployTroop || !battleArmy[selectedDeployTroop]) return;
+
+    const newTroop: LiveTroop = {
+      id: `troop_${liveTroops.length + 1}`,
+      troopId: selectedDeployTroop,
+      x,
+      y
+    };
+
+    setLiveTroops(prev => [...prev, newTroop]);
+    setBattleArmy(prev => ({ ...prev, [selectedDeployTroop]: prev[selectedDeployTroop] - 1 }));
+  };
+
+  const handleStartBattle = async () => {
+    setErrorMsg("");
+    try {
+      const drops = liveTroops.map(t => ({ troop_id: t.troopId, x: t.x, y: t.y }));
+      const result = await attackVillage(enemyVillage.id, drops);
+      
+      setBattleLog(result.log);
+      setCurrentTick(0);
+      setBattlePhase('playback'); 
+      
+      setVillageStats(townHallLevel, gold + result.gold_stolen, elixir + result.elixir_stolen);
+      alert(`Battle Calculated! Playing replay... Stolen: ${result.gold_stolen} Gold.`);
+      
+    } catch (error: any) {
+      setErrorMsg(error.message);
+    }
+  };
+
+  const handleReturnHome = async () => {
+    try {
+      const freshTroops = await getVillageTroops();
+      setArmy(freshTroops); 
+    } catch (error: any) {
+      console.error("Failed to refresh troops:", error);
+    }
+    
+    setEnemyVillage(null);
+    setBattlePhase('scout');
+  };
+
+  useEffect(() => {
+    if (battlePhase !== 'playback' || battleLog.length === 0) return;
+
+    const interval = setInterval(() => {
+      setCurrentTick(prevTick => {
+        const nextTick = prevTick + 1;
+        
+        const currentEvents = battleLog.filter(e => e.tick === nextTick);
+        
+        if (currentEvents.length > 0) {
+          const deletedIds = currentEvents.filter(e => e.action === 'delete').map(e => e.entity_id);
+          
+          if (deletedIds.length > 0) {
+            setLiveBuildings(prev => prev.filter(b => !deletedIds.includes(b.id as string)));
+            setLiveTroops(prev => prev.filter(t => !deletedIds.includes(t.id)));
+          }
+
+          const moves = currentEvents.filter(e => e.action === 'move');
+          if (moves.length > 0) {
+            setLiveTroops(prev => prev.map(troop => {
+              const moveEvent = moves.find(m => m.entity_id === troop.id);
+              if (moveEvent && moveEvent.x !== undefined && moveEvent.y !== undefined) {
+                return { ...troop, x: moveEvent.x, y: moveEvent.y };
+              }
+              return troop;
+            }));
+          }
+        }
+
+        const maxTick = Math.max(...battleLog.map(e => e.tick));
+        if (nextTick > maxTick) {
+          setBattlePhase('result');
+          clearInterval(interval);
+        }
+
+        return nextTick;
+      });
+    }, 1000); 
+
+    return () => clearInterval(interval);
+  }, [battlePhase, battleLog]);
+
   const handleCollect = async (type: 'gold' | 'elixir') => {
     try {
       if (type === 'gold') {
@@ -205,7 +335,18 @@ export default function Village() {
         {errorMsg && <p style={{ color: '#ef4444', marginTop: '10px' }}>{errorMsg}</p>}
 
         <div style={{ marginTop: '20px', width: '100%', height: 'calc(100vh - 100px)', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', backgroundColor: '#000', borderRadius: '8px' }}>
-          <VillageCanvas buildings={buildings} onMapClick={handleMapClick} />
+          {enemyVillage ? (
+            <VillageCanvas 
+              buildings={liveBuildings} 
+              deployedTroops={liveTroops} 
+              onMapClick={handleDeployTroop} 
+            />
+          ) : (
+            <VillageCanvas 
+              buildings={buildings} 
+              onMapClick={handleMapClick} 
+            />
+          )}
         </div>
 
         {movingBuilding && (
@@ -271,6 +412,71 @@ export default function Village() {
             >
               Cancel
             </button>
+          </div>
+        )}
+
+        {enemyVillage && battlePhase === 'scout' && (
+          <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', background: '#1f2937', padding: '15px', borderRadius: '12px', zIndex: 10, display: 'flex', gap: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.5)' }}>
+            
+            {Object.entries(battleArmy).map(([idStr, qty]) => {
+              if (qty <= 0) return null;
+              const troopId = Number(idStr);
+              const troopConfig = troopConfigs.find(t => t.id === troopId);
+              const isSelected = selectedDeployTroop === troopId;
+
+              return (
+                <button 
+                  key={troopId}
+                  onClick={() => setSelectedDeployTroop(troopId)}
+                  style={{ 
+                    background: isSelected ? '#3b82f6' : '#374151', 
+                    border: isSelected ? '2px solid white' : '2px solid transparent', 
+                    color: 'white', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', 
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px'
+                  }}
+                >
+                  <span style={{ fontWeight: 'bold' }}>{troopConfig?.name || `Troop ${troopId}`}</span>
+                  <span style={{ fontSize: '14px', color: '#22c55e' }}>x{qty}</span>
+                </button>
+              );
+            })}
+
+            {Object.values(battleArmy).every(qty => qty === 0) && (
+               <span style={{ color: '#9ca3af', padding: '10px' }}>Out of troops!</span>
+            )}
+          </div>
+        )}
+
+        {enemyVillage && (
+          <div style={{ position: 'absolute', top: '90px', left: '50%', transform: 'translateX(-50%)', background: '#ef4444', padding: '15px 30px', borderRadius: '12px', zIndex: 10, display: 'flex', gap: '20px', alignItems: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.5)' }}>
+            <div>
+              <h3 style={{ margin: '0 0 5px 0' }}>Attacking: {enemyVillage.owner || 'Enemy'}</h3>
+              <div style={{ display: 'flex', gap: '15px', fontWeight: 'bold' }}>
+                <span style={{ color: '#fde047' }}>Loot Gold: {enemyVillage.goldToSteal || 0}</span>
+                <span style={{ color: '#fbcfe8' }}>Loot Elixir: {enemyVillage.elixirToSteal || 0}</span>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {battlePhase === 'scout' && (
+                <>
+                  <button onClick={handleStartBattle} style={{ background: '#22c55e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    Attack!
+                  </button>
+                  <button onClick={handleReturnHome} style={{ background: 'white', color: '#ef4444', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    Retreat
+                  </button>
+                </>
+              )}
+              {battlePhase === 'playback' && (
+                <span style={{ color: 'white', fontWeight: 'bold', padding: '8px 16px' }}>Replaying Battle...</span>
+              )}
+              {battlePhase === 'result' && (
+                <button onClick={handleReturnHome} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Return Home
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -342,6 +548,24 @@ export default function Village() {
             
             <button style={{ width: '100%', background: '#3b82f6', color: 'white', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', marginTop: '20px', fontWeight: 'bold' }} onClick={handleTrainSubmit}>
               Train Selected Troops
+            </button>
+          </div>
+        )}
+
+        {activeTab === "battle" && !enemyVillage && (
+          <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'white', color: 'black', padding: '20px', borderRadius: '8px', width: '300px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ margin: 0 }}>Battle Menu</h3>
+              <button onClick={() => setActiveTab("none")}>Close</button>
+            </div>
+            <p style={{ color: '#444', fontSize: '14px', marginBottom: '20px' }}>
+              Find an opponent to raid their resources. Make sure your army is trained and ready!
+            </p>
+            <button 
+              style={{ width: '100%', background: '#ef4444', color: 'white', border: 'none', padding: '12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}
+              onClick={handleFindMatch}
+            >
+              Find Match (50 Gold)
             </button>
           </div>
         )}

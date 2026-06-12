@@ -24,14 +24,6 @@ export interface TroopConfig {
   min_thlevel: number;
 }
 
-export interface Building {
-  building_name: string;
-  level: number;
-  x: number;
-  y: number;
-  status: string;
-}
-
 export interface GameState {
   townHallLevel: number;
   gold: number;
@@ -47,4 +39,42 @@ export interface GameState {
   
   spendGold: (amount: number) => void;
   spendElixir: (amount: number) => void;
+}
+
+export interface TroopDrop {
+  troop_id: number;
+  x: number;
+  y: number;
+}
+
+export interface BattleEvent {
+  tick: number;
+  action: string;
+  entity_id: string;
+  target_id?: string;
+  x?: number;
+  y?: number;
+}
+
+export interface BattleResult {
+  percentage_destroyed: number;
+  gold_stolen: number;
+  elixir_stolen: number;
+  log: BattleEvent[];
+}
+
+export interface Building {
+  id?: string;
+  building_name: string;
+  level: number;
+  x: number;
+  y: number;
+  status: string;
+}
+
+export interface LiveTroop {
+  id: string;
+  troopId: number;
+  x: number;
+  y: number;
 }
