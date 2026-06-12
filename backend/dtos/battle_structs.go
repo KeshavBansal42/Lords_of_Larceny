@@ -7,8 +7,8 @@ type MatchmakeResponseFromDBDTO struct {
 }
 
 type MatchmakeResponseDTO struct {
-	Message   string `json:"message"`
-	VillageID string `json:"villageid"`
+	Message string `json:"message"`
+	UserID  string `json:"userid"`
 }
 
 type TroopDropDTO struct {

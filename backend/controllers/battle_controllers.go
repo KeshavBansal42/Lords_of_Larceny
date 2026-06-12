@@ -18,15 +18,15 @@ func Matchmake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	villageID, err := repository.Matchmake(userID)
+	targetUserID, err := repository.Matchmake(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	res := dtos.MatchmakeResponseDTO{
-		Message:   "Enemy found successfully",
-		VillageID: villageID,
+		Message: "Enemy found successfully",
+		UserID:  targetUserID,
 	}
 
 	respond(w, http.StatusOK, res)
