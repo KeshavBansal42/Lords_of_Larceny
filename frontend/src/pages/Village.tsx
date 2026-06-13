@@ -25,8 +25,6 @@ export default function Village() {
   const [battleLog, setBattleLog] = useState<BattleEvent[]>([]);
   const [currentTick, setCurrentTick] = useState(0);
 
-  // const [deployedTroops, setDeployedTroops] = useState<{ troopId: number, x: number, y: number }[]>([])
-
   const { 
     townHallLevel, gold, elixir, buildingConfigs, troopConfigs, army,
     setVillageStats, setBuildingConfigs, setTroopConfigs, setArmy, addTroopsToArmy, spendGold, spendElixir 
@@ -39,6 +37,20 @@ export default function Village() {
     const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const hasFinishedUpgrade = buildings.some(b => 
+      b.status === 'upgrading' && 
+      b.upgrade_complete_at && 
+      new Date(b.upgrade_complete_at).getTime() <= currentTime
+    );
+
+    if (hasFinishedUpgrade) {
+      getVillageBuildings()
+        .then(freshBuildings => setBuildings(freshBuildings))
+        .catch(err => console.error(err));
+    }
+  }, [currentTime, buildings]);
 
   const getMyUserId = () => {
     try {
@@ -166,7 +178,9 @@ export default function Village() {
         if (pendingBuilding.build_resource_type === 'gold') spendGold(pendingBuilding.build_cost);
         else spendElixir(pendingBuilding.build_cost);
 
-        setBuildings(prev => [...prev, { building_name: pendingBuilding.name, level: 0, x, y, status: 'upgrading' }]);
+        const freshBuildings = await getVillageBuildings();
+        setBuildings(freshBuildings);
+        
         setPendingBuilding(null);
       } catch (error: any) {
         setErrorMsg(error.message);
@@ -296,7 +310,7 @@ export default function Village() {
       const freshTroops = await getVillageTroops();
       setArmy(freshTroops); 
     } catch (error: any) {
-      console.error("Failed to refresh troops:", error);
+      console.error(error);
     }
     
     setEnemyVillage(null);
@@ -364,14 +378,10 @@ export default function Village() {
     if (!selectedBuilding) return;
     try {
       const res = await upgradeBuilding(selectedBuilding.x, selectedBuilding.y);
-      
       setVillageStats(townHallLevel, res.gold, res.elixir);
 
-      setBuildings(prev => prev.map(b => 
-        b.x === selectedBuilding.x && b.y === selectedBuilding.y 
-          ? { ...b, status: 'upgrading' } 
-          : b
-      ));
+      const freshBuildings = await getVillageBuildings();
+      setBuildings(freshBuildings);
 
       setSelectedBuilding(null);
     } catch (error: any) {
@@ -408,12 +418,14 @@ export default function Village() {
               deployedTroops={liveTroops}
               redZones={battlePhase === 'scout' ? restrictedZones : []} 
               onMapClick={handleDeployTroop} 
+              buildingConfigs={buildingConfigs}
             />
           ) : (
             <VillageCanvas 
               buildings={buildings} 
               onMapClick={handleMapClick} 
               currentTime={currentTime}
+              buildingConfigs={buildingConfigs}
             />
           )}
         </div>

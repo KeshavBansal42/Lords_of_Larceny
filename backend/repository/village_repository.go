@@ -32,7 +32,7 @@ func CreateUserAndVillage(ctx context.Context, username, password_hash string) (
 		return "", errors.New("failed to initialise village")
 	}
 
-	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_name, level, x, y) VALUES ($1, 'Town Hall', 1, 16, 16)", villageID)
+	_, err = tx.Exec(ctx, "INSERT INTO village_buildings (village_id, building_name, level, x, y) VALUES ($1, 'Town Hall', 1, 15, 15)", villageID)
 
 	if err != nil {
 

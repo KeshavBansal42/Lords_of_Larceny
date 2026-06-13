@@ -1,9 +1,9 @@
-import { Application, extend } from '@pixi/react';
-import type { Building, LiveTroop } from '../types';
-import { Graphics, Text, TextStyle } from 'pixi.js';
-import React, { useCallback } from 'react';
+import { Application, extend } from '@pixi/react'; 
+import { Graphics, Text, TextStyle, Sprite, Texture, Assets } from 'pixi.js';
+import React, { useCallback, useState, useEffect } from 'react';
+import type { Building, LiveTroop, BuildingConfig } from '../types';
 
-extend({ Graphics, Text });
+extend({ Graphics, Text, Sprite });
 
 const TILE_SIZE = 20;
 const GRID_SIZE = 36;
@@ -15,6 +15,7 @@ interface CanvasProps {
   onMapClick?: (x: number, y: number) => void;
   redZones?: { x: number, y: number, w: number, h: number }[];
   currentTime?: number;
+  buildingConfigs?: BuildingConfig[];
 }
 
 const formatRemainingTime = (completeAtStr: string, now: number) => {
@@ -27,8 +28,53 @@ const formatRemainingTime = (completeAtStr: string, now: number) => {
   return `${m}m ${s}s`;
 };
 
-export default function VillageCanvas({ buildings, deployedTroops = [], onMapClick, redZones, currentTime }: CanvasProps) {
-  
+const getBuildingImage = (name: string, level: number) => {
+  const formattedName = name.replace(/\s+/g, '_');
+  const displayLevel = level === 0 ? 1 : level;
+  return `/${formattedName}_level_${displayLevel}.png`;
+};
+
+const getTroopImage = (troopId: number) => {
+  if (troopId === 1) return '/Barbarian.png';
+  if (troopId === 2) return '/Archer.png';
+  if (troopId === 3) return '/Goblin.png';
+  if (troopId === 4) return '/Giant.png';
+  if (troopId === 5) return '/WallBreaker.png'
+  return '/Barbarian.png';
+};
+
+const AsyncSprite = ({ url, x, y, width, height, alpha = 1, anchor = 0 }: any) => {
+  const [texture, setTexture] = useState<Texture | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    Assets.load(url).then((loadedTexture) => {
+      if (isMounted) {
+        setTexture(loadedTexture);
+      }
+    }).catch(err => console.error("Failed to load:", url, err));
+
+    return () => { isMounted = false; };
+  }, [url]);
+
+  if (!texture) return null; 
+
+  return (
+    <pixiSprite 
+      texture={texture} 
+      x={x} 
+      y={y} 
+      width={width} 
+      height={height} 
+      alpha={alpha} 
+      anchor={anchor}
+    />
+  );
+};
+
+export default function VillageCanvas({ buildings, deployedTroops = [], onMapClick, redZones, currentTime, buildingConfigs = [] }: CanvasProps) {
+
   const drawBackground = useCallback((g: Graphics) => {
     g.clear();
     
@@ -49,23 +95,6 @@ export default function VillageCanvas({ buildings, deployedTroops = [], onMapCli
     }
     
     g.stroke({ width: 1, color: 0x166534, alpha: 0.6 });
-  }, []);
-
-  const drawBuilding = useCallback((g: Graphics, building: Building) => {
-    g.clear();
-    const color = building.building_name === 'Town Hall' ? 0x3b82f6 : 0x6b7280;
-    const sizeInTiles = building.building_name === 'Town Hall' ? 4 : 2; 
-    
-    g.rect(0, 0, sizeInTiles * TILE_SIZE, sizeInTiles * TILE_SIZE);
-    g.fill(color);
-  }, []);
-
-  const drawTroop = useCallback((g: Graphics, troop: LiveTroop) => {
-    g.clear();
-    const color = troop.troopId === 1 ? 0xef4444 : troop.troopId === 2 ? 0xa855f7 : 0x22c55e; 
-    
-    g.circle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2.5);
-    g.fill(color);
   }, []);
 
   const drawRedZone = useCallback((g: Graphics, zone: { x: number, y: number, w: number, h: number }) => {
@@ -106,31 +135,45 @@ export default function VillageCanvas({ buildings, deployedTroops = [], onMapCli
         />
       ))}
 
-      {buildings.map((b, index) => (
-        <React.Fragment key={`bldg-container-${index}`}>
-          <pixiGraphics 
-            draw={(g) => drawBuilding(g, b)} 
-            x={b.x * TILE_SIZE} 
-            y={b.y * TILE_SIZE} 
-          />
-          
-          {b.status === 'upgrading' && b.upgrade_complete_at && (
-            <pixiText 
-              text={formatRemainingTime(b.upgrade_complete_at, currentTime || Date.now())}
-              x={b.x * TILE_SIZE}
-              y={(b.y * TILE_SIZE) - 15}
-              style={new TextStyle({ fill: '#eab308', fontSize: 12, fontWeight: 'bold', stroke: {color: 'black', width: 2} })}
+      {buildings.map((b, index) => {
+        const configLevel = b.level === 0 ? 1 : b.level;
+        const config = buildingConfigs.find(c => c.name === b.building_name && c.level === configLevel);
+        
+        const sizeInTiles = config?.size || 2; 
+        const pixelSize = sizeInTiles * TILE_SIZE;
+
+        return (
+          <React.Fragment key={`bldg-container-${index}`}>
+            <AsyncSprite 
+              url={getBuildingImage(b.building_name, b.level)} 
+              x={b.x * TILE_SIZE} 
+              y={b.y * TILE_SIZE} 
+              width={pixelSize}
+              height={pixelSize}
+              alpha={b.status === 'upgrading' ? 0.6 : 1} 
             />
-          )}
-        </React.Fragment>
-      ))}
+            
+            {b.status === 'upgrading' && b.upgrade_complete_at && (
+              <pixiText 
+                text={formatRemainingTime(b.upgrade_complete_at, currentTime || Date.now())}
+                x={b.x * TILE_SIZE}
+                y={(b.y * TILE_SIZE) - 15}
+                style={new TextStyle({ fill: '#eab308', fontSize: 12, fontWeight: 'bold', stroke: {color: 'black', width: 2} })}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
 
       {deployedTroops.map((t, index) => (
-        <pixiGraphics 
+        <AsyncSprite 
           key={`troop-${index}`} 
-          draw={(g) => drawTroop(g, t)} 
+          url={getTroopImage(t.troopId)} 
           x={t.x * TILE_SIZE} 
           y={t.y * TILE_SIZE} 
+          width={TILE_SIZE * 1.5} 
+          height={TILE_SIZE * 1.5}
+          anchor={0.5} 
         />
       ))}
       

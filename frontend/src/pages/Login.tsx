@@ -18,7 +18,7 @@ export default function Login() {
       
       localStorage.setItem('token', token);
       
-      navigate('/village'); 
+      window.location.href = '/village';
     } catch (error: any) {
       setErrorMsg(error.message);
     }

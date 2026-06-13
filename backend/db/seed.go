@@ -50,13 +50,13 @@ func SeedDatabase(conn *pgxpool.Pool) {
 		// 1. Seed base building configurations
 		buildingQuery := `
 			INSERT INTO building_configs (name, build_resource_type, size) VALUES 
-			('Town Hall', 'gold', 4),
-			('Cannon', 'gold', 2),
-			('Archer Tower', 'gold', 2),
-			('Mortar', 'gold', 2),
-			('Gold Mine', 'elixir', 2),
-			('Elixir Collector', 'gold', 2),
-			('Army Camp', 'elixir', 3);
+			('Town Hall', 'gold', 6),
+			('Cannon', 'gold', 4),
+			('Archer Tower', 'gold', 4),
+			('Mortar', 'gold', 4),
+			('Gold Mine', 'elixir', 4),
+			('Elixir Collector', 'gold', 4),
+			('Army Camp', 'elixir', 5);
 		`
 		_, err = conn.Exec(ctx, buildingQuery)
 		if err != nil {
@@ -75,9 +75,7 @@ func SeedDatabase(conn *pgxpool.Pool) {
 			('Archer Tower', 3, 460, 5000, 3, 300),
 			('Archer Tower', 4, 500, 20000, 4, 600),
 			('Mortar', 1, 400, 8000, 3, 300),
-			('Mortar', 2, 450, 32000, 3, 600),
-			('Mortar', 3, 500, 120000, 4, 1200),
-			('Mortar', 4, 550, 180000, 4, 2400),
+			('Mortar', 2, 450, 32000, 4, 600),
 			('Gold Mine', 1, 75, 150, 1, 60),
 			('Gold Mine', 2, 150, 300, 2, 120),
 			('Gold Mine', 3, 300, 700, 3, 300),
