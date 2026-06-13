@@ -18,7 +18,7 @@ func Matchmake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetUserID, err := repository.Matchmake(userID)
+	targetUserID, err := repository.Matchmake(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -49,7 +49,7 @@ func Battle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	damage, lootedGold, lootedElixir, battleLog, err := repository.Battle(userID, req.TargetUserID, req.Drops)
+	damage, lootedGold, lootedElixir, battleLog, err := repository.Battle(r.Context(), userID, req.TargetUserID, req.Drops)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -76,7 +76,7 @@ func GetBattleHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	battles, err := repository.GetBattleHistory(userID)
+	battles, err := repository.GetBattleHistory(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

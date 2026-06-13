@@ -21,7 +21,7 @@ func InitDB() {
 	Pool, err = pgxpool.New(context.Background(), connectionString)
 	if err != nil {
 		log.Println("Error connecting to database:", err)
-		os.Exit(1) // Better to crash on boot if DB is down
+		os.Exit(1)
 	}
 
 	SeedDatabase(Pool)

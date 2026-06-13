@@ -77,7 +77,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := repository.CreateUserAndVillage(req.Username, passwordHash)
+	userID, err := repository.CreateUserAndVillage(r.Context(), req.Username, passwordHash)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -105,7 +105,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 
-	userID, passwordHash, err := repository.GetUserByUsername(req.Username)
+	userID, passwordHash, err := repository.GetUserByUsername(r.Context(), req.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -147,7 +147,7 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.DeleteAccount(userID)
+	err = repository.DeleteAccount(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

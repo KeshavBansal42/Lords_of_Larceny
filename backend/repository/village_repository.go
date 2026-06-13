@@ -10,9 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func CreateUserAndVillage(username, password_hash string) (string, error) {
-	ctx := context.Background()
-
+func CreateUserAndVillage(ctx context.Context, username, password_hash string) (string, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return "", err
@@ -48,10 +46,10 @@ func CreateUserAndVillage(username, password_hash string) (string, error) {
 	return userID, nil
 }
 
-func GetUserByUsername(username string) (string, string, error) {
+func GetUserByUsername(ctx context.Context, username string) (string, string, error) {
 	var userID string
 	var passwordHash string
-	err := db.Pool.QueryRow(context.Background(), "SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
+	err := db.Pool.QueryRow(ctx, "SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
 
 	if err != nil {
 		return "", "", errors.New("Error getting the userID and PasswordHash")
@@ -60,12 +58,12 @@ func GetUserByUsername(username string) (string, string, error) {
 	return userID, passwordHash, nil
 }
 
-func GetVillageByUserID(userID string) (string, int, int, int, error) {
+func GetVillageByUserID(ctx context.Context, userID string) (string, int, int, int, error) {
 	var townHallLevel int
 	var gold int
 	var elixir int
 	var villageID string
-	err := db.Pool.QueryRow(context.Background(), "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel, &gold, &elixir)
+	err := db.Pool.QueryRow(ctx, "SELECT id, town_hall_level, gold, elixir FROM villages WHERE user_id = $1", userID).Scan(&villageID, &townHallLevel, &gold, &elixir)
 
 	if err != nil {
 		return "", 0, 0, 0, errors.New("Error fetching the village")
@@ -74,9 +72,7 @@ func GetVillageByUserID(userID string) (string, int, int, int, error) {
 	return villageID, townHallLevel, gold, elixir, nil
 }
 
-func CollectGold(userID string) (int, error) {
-	ctx := context.Background()
-
+func CollectGold(ctx context.Context, userID string) (int, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -160,9 +156,7 @@ func CollectGold(userID string) (int, error) {
 	return newGold, nil
 }
 
-func CollectElixir(userID string) (int, error) {
-	ctx := context.Background()
-
+func CollectElixir(ctx context.Context, userID string) (int, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -246,9 +240,7 @@ func CollectElixir(userID string) (int, error) {
 	return newElixir, nil
 }
 
-func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingResponseFromDBDTO, error) {
-	ctx := context.Background()
-
+func ScoutVillage(ctx context.Context, targetUserID string) (string, int, int, int, []dtos.BuildingResponseFromDBDTO, error) {
 	var username string
 	var villageID string
 	var thLevel int
@@ -280,9 +272,7 @@ func ScoutVillage(targetUserID string) (string, int, int, int, []dtos.BuildingRe
 	return username, thLevel, gold, elixir, buildings, nil
 }
 
-func DeleteAccount(userID string) error {
-	ctx := context.Background()
-
+func DeleteAccount(ctx context.Context, userID string) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err

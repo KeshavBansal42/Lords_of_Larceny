@@ -19,13 +19,13 @@ func GetVillage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.SyncBuildings(userID)
+	err = repository.SyncBuildings(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	_, thlevel, gold, elixir, err := repository.GetVillageByUserID(userID)
+	_, thlevel, gold, elixir, err := repository.GetVillageByUserID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,13 +51,13 @@ func CollectGold(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.SyncBuildings(userID)
+	err = repository.SyncBuildings(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	gold, err := repository.CollectGold(userID)
+	gold, err := repository.CollectGold(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,13 +82,13 @@ func CollectElixir(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.SyncBuildings(userID)
+	err = repository.SyncBuildings(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	elixir, err := repository.CollectElixir(userID)
+	elixir, err := repository.CollectElixir(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -106,13 +106,13 @@ func ScoutVillage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	targetUserID := vars["id"]
 
-	err := repository.SyncBuildings(targetUserID)
+	err := repository.SyncBuildings(r.Context(), targetUserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	username, thLevel, gold, elixir, buildings, err := repository.ScoutVillage(targetUserID)
+	username, thLevel, gold, elixir, buildings, err := repository.ScoutVillage(r.Context(), targetUserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

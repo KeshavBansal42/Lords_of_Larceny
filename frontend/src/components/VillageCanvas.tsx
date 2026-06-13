@@ -114,7 +114,6 @@ export default function VillageCanvas({ buildings, deployedTroops = [], onMapCli
             y={b.y * TILE_SIZE} 
           />
           
-          {/* UPGRADE TIMER TEXT */}
           {b.status === 'upgrading' && b.upgrade_complete_at && (
             <pixiText 
               text={formatRemainingTime(b.upgrade_complete_at, currentTime || Date.now())}

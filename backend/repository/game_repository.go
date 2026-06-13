@@ -9,9 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func GetGameConfigs() ([]models.BuildingConfig, []models.TroopConfig, error) {
-	ctx := context.Background()
-
+func GetGameConfigs(ctx context.Context) ([]models.BuildingConfig, []models.TroopConfig, error) {
 	buildingQuery := `
 		SELECT 
 			b.name, 

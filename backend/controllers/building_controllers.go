@@ -18,19 +18,19 @@ func GetAllVillageBuildings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.SyncBuildings(userID)
+	err = repository.SyncBuildings(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	villageID, _, _, _, err := repository.GetVillageByUserID(userID)
+	villageID, _, _, _, err := repository.GetVillageByUserID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	buildings, err := repository.GetAllVillageBuildings(villageID)
+	buildings, err := repository.GetAllVillageBuildings(r.Context(), villageID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,7 +60,7 @@ func AddBuilding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gold, elixir, err := repository.AddBuilding(userID, req.BuildingName, req.X, req.Y)
+	gold, elixir, err := repository.AddBuilding(r.Context(), userID, req.BuildingName, req.X, req.Y)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -92,7 +92,7 @@ func UpgradeBuilding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gold, elixir, err := repository.UpgradeBuilding(userID, req.X, req.Y)
+	gold, elixir, err := repository.UpgradeBuilding(r.Context(), userID, req.X, req.Y)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -124,7 +124,7 @@ func MoveBuilding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.MoveBuilding(userID, req.OldX, req.OldY, req.NewX, req.NewY)
+	err = repository.MoveBuilding(r.Context(), userID, req.OldX, req.OldY, req.NewX, req.NewY)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

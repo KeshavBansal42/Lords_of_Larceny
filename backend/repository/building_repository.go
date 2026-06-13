@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func GetAllVillageBuildings(villageID string) ([]dtos.BuildingResponseFromDBDTO, error) {
-	rows, err := db.Pool.Query(context.Background(), "SELECT building_name, level, x, y, status, upgrade_complete_at FROM village_buildings WHERE village_id = $1", villageID)
+func GetAllVillageBuildings(ctx context.Context, villageID string) ([]dtos.BuildingResponseFromDBDTO, error) {
+	rows, err := db.Pool.Query(ctx, "SELECT building_name, level, x, y, status, upgrade_complete_at FROM village_buildings WHERE village_id = $1", villageID)
 
 	if err != nil {
 		return nil, errors.New("Error fetching buildings")
@@ -26,9 +26,7 @@ func GetAllVillageBuildings(villageID string) ([]dtos.BuildingResponseFromDBDTO,
 	return buildings, nil
 }
 
-func AddBuilding(userID string, buildingName string, x, y int) (int, int, error) {
-	ctx := context.Background()
-
+func AddBuilding(ctx context.Context, userID string, buildingName string, x, y int) (int, int, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, 0, err
@@ -117,9 +115,7 @@ func AddBuilding(userID string, buildingName string, x, y int) (int, int, error)
 	return gold, elixir, nil
 }
 
-func UpgradeBuilding(userId string, x, y int) (int, int, error) {
-	ctx := context.Background()
-
+func UpgradeBuilding(ctx context.Context, userId string, x, y int) (int, int, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, 0, err
@@ -213,9 +209,7 @@ func UpgradeBuilding(userId string, x, y int) (int, int, error) {
 	return gold, elixir, nil
 }
 
-func MoveBuilding(userID string, oldX, oldY, newX, newY int) error {
-	ctx := context.Background()
-
+func MoveBuilding(ctx context.Context, userID string, oldX, oldY, newX, newY int) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -284,9 +278,7 @@ func MoveBuilding(userID string, oldX, oldY, newX, newY int) error {
 	return nil
 }
 
-func SyncBuildings(userID string) error {
-	ctx := context.Background()
-
+func SyncBuildings(ctx context.Context, userID string) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err

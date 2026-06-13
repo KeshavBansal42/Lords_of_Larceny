@@ -24,7 +24,7 @@ func TrainTroops(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.TrainTroops(userID, req.TroopsToTrain)
+	err = repository.TrainTroops(r.Context(), userID, req.TroopsToTrain)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -49,13 +49,13 @@ func GetAllVillageTroops(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	villageID, _, _, _, err := repository.GetVillageByUserID(userID)
+	villageID, _, _, _, err := repository.GetVillageByUserID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	troops, err := repository.GetAllVillageTroops(villageID)
+	troops, err := repository.GetAllVillageTroops(r.Context(), villageID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

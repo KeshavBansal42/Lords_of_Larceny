@@ -9,9 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func TrainTroops(userID string, troopsToTrain map[int]int) error {
-	ctx := context.Background()
-
+func TrainTroops(ctx context.Context, userID string, troopsToTrain map[int]int) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -88,8 +86,8 @@ func TrainTroops(userID string, troopsToTrain map[int]int) error {
 	return nil
 }
 
-func GetAllVillageTroops(villageID string) ([]dtos.TroopResponseFromDBDTO, error) {
-	rows, err := db.Pool.Query(context.Background(), "SELECT troop_id, quantity FROM village_troops WHERE village_id = $1", villageID)
+func GetAllVillageTroops(ctx context.Context, villageID string) ([]dtos.TroopResponseFromDBDTO, error) {
+	rows, err := db.Pool.Query(ctx, "SELECT troop_id, quantity FROM village_troops WHERE village_id = $1", villageID)
 
 	if err != nil {
 		return nil, errors.New("Error fetching troops")

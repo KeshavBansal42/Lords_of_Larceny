@@ -25,7 +25,7 @@ export default function Village() {
   const [battleLog, setBattleLog] = useState<BattleEvent[]>([]);
   const [currentTick, setCurrentTick] = useState(0);
 
-  const [deployedTroops, setDeployedTroops] = useState<{ troopId: number, x: number, y: number }[]>([])
+  // const [deployedTroops, setDeployedTroops] = useState<{ troopId: number, x: number, y: number }[]>([])
 
   const { 
     townHallLevel, gold, elixir, buildingConfigs, troopConfigs, army,

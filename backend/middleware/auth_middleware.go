@@ -34,7 +34,6 @@ func RequireAuth(next http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), "userID", userID)
 
-			// 6. Step aside and let the request into the Controller
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}

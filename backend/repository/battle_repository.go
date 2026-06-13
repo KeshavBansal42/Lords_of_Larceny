@@ -14,9 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func Matchmake(userID string) (string, error) {
-	ctx := context.Background()
-
+func Matchmake(ctx context.Context, userID string) (string, error) {
 	var villageID string
 	var townHallLevel int
 	var troopCount int
@@ -67,8 +65,8 @@ func Matchmake(userID string) (string, error) {
 	return selectedOpponent.UserID, nil
 }
 
-func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liveTroops *map[string]*models.LiveTroop, buildings []dtos.BuildingResponseFromDBDTO, drops []dtos.TroopDropDTO) error {
-	buildingConfigsArray, troopConfigsArray, err := GetGameConfigs()
+func Populate(ctx context.Context, userID string, liveBuildings *map[string]*models.LiveBuilding, liveTroops *map[string]*models.LiveTroop, buildings []dtos.BuildingResponseFromDBDTO, drops []dtos.TroopDropDTO) error {
+	buildingConfigsArray, troopConfigsArray, err := GetGameConfigs(ctx)
 	if err != nil {
 		return errors.New("Error fetching config files")
 	}
@@ -138,9 +136,7 @@ func Populate(userID string, liveBuildings *map[string]*models.LiveBuilding, liv
 	return nil
 }
 
-func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int, int, int, []dtos.BattleEventDTO, error) {
-	ctx := context.Background()
-
+func Battle(ctx context.Context, userID string, targetUserID string, drops []dtos.TroopDropDTO) (int, int, int, []dtos.BattleEventDTO, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, 0, 0, nil, err
@@ -153,11 +149,11 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 		troopQuantity[key]++
 	}
 
-	villageID, _, _, _, err := GetVillageByUserID(userID)
+	villageID, _, gold, elixir, err := GetVillageByUserID(ctx, userID)
 	if err != nil {
 		return 0, 0, 0, nil, errors.New("Error fetching village id")
 	}
-	villageTroops, err := GetAllVillageTroops(villageID)
+	villageTroops, err := GetAllVillageTroops(ctx, villageID)
 
 	dbTroopMap := make(map[int]int)
 	for _, dbTroop := range villageTroops {
@@ -170,7 +166,7 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 		}
 	}
 
-	_, _, gold, elixir, buildings, err := ScoutVillage(targetUserID)
+	_, _, gold, elixir, buildings, err := ScoutVillage(ctx, targetUserID)
 	if err != nil {
 		return 0, 0, 0, nil, errors.New("Error fetching enemy village")
 	}
@@ -178,12 +174,12 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 	liveBuildings := make(map[string]*models.LiveBuilding)
 	liveTroops := make(map[string]*models.LiveTroop)
 
-	err = Populate(targetUserID, &liveBuildings, &liveTroops, buildings, drops)
+	err = Populate(ctx, targetUserID, &liveBuildings, &liveTroops, buildings, drops)
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
 
-	maxTicks := 1800
+	maxTicks := 180
 	var battleLog []dtos.BattleEventDTO
 
 	totalBuildings := len(liveBuildings)
@@ -368,7 +364,16 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 		return 0, 0, 0, nil, errors.New("Error deducting resources")
 	}
 
-	_, err = tx.Exec(ctx, "UPDATE villages SET gold = gold + $1, elixir = elixir + $2 WHERE user_id = $3", lootedGold, lootedElixir, userID)
+	var maxGold, maxElixir int
+	err = tx.QueryRow(ctx, "SELECT max_gold_storage, max_elixir_storage FROM village_production_stats WHERE village_id = $1", villageID).Scan(&maxGold, &maxElixir)
+	if err != nil {
+		return 0, 0, 0, nil, errors.New("Error fetching storages")
+	}
+
+	newGold := min(maxGold, gold+lootedGold)
+	newElixir := min(maxElixir, elixir+lootedElixir)
+
+	_, err = tx.Exec(ctx, "UPDATE villages SET gold = $1, elixir = $2 WHERE user_id = $3", newGold, newElixir, userID)
 	if err != nil {
 		return 0, 0, 0, nil, errors.New("Error adding resources")
 	}
@@ -397,9 +402,7 @@ func Battle(userID string, targetUserID string, drops []dtos.TroopDropDTO) (int,
 	return damagePercent, lootedGold, lootedElixir, battleLog, nil
 }
 
-func GetBattleHistory(userID string) ([]dtos.BattleRecordDTO, error) {
-	ctx := context.Background()
-
+func GetBattleHistory(ctx context.Context, userID string) ([]dtos.BattleRecordDTO, error) {
 	query := `
 		SELECT id, attacker_id, defender_id, winner_id, damage_percent, occurred_at
 		FROM battles
