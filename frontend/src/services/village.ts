@@ -8,7 +8,7 @@ export const getVillageStats = async (): Promise<VillageStats> => {
     throw new Error("No token found. User is not logged in.");
   }
 
-  const response = await fetch('api/village/', {
+  const response = await fetch('/api/village/', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -31,7 +31,7 @@ export const getVillageBuildings = async (): Promise<Building[]> => {
     throw new Error("No token found. User is not logged in.");
   }
 
-  const response = await fetch('api/village/buildings', {
+  const response = await fetch('/api/village/buildings', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

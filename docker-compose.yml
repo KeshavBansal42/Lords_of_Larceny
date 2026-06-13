@@ -30,7 +30,6 @@ services:
       db:
         condition: service_healthy
 
-  # 3. Your Go API
   api:
     build: ./backend
     container_name: lol_api
@@ -42,6 +41,15 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  frontend:
+    build: ./frontend
+    container_name: lol_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
 
 volumes:
   pgdata:

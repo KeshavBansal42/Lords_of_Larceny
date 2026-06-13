@@ -5,7 +5,7 @@ export const getGameConfigs = async () => {
     throw new Error("No token found. User is not logged in.");
   }
 
-  const response = await fetch('api/game/configs', {
+  const response = await fetch('/api/game/configs', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
