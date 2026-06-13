@@ -1,5 +1,4 @@
-import type { VillageStats } from '../types';
-import type { Building } from '../types';
+import type { VillageStats, Building } from '../types';
 
 export const getVillageStats = async (): Promise<VillageStats> => {
   const token = localStorage.getItem('token');
